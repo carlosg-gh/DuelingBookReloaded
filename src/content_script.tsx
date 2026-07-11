@@ -151,6 +151,9 @@ window.onload = async function () {
   let hotkeyHashMap: HotkeyEntry[] = [];
   let matcher = new SequenceMatcher([]);
   let sequenceTimer: number | undefined;
+  // the physically held key that started/continued the pending sequence;
+  // while it's down the sequence (and its hint) must not time out
+  let heldPrefixToken: string | null = null;
 
   function setHotkeys(entries: HotkeyEntry[]) {
     hotkeyHashMap = entries;
@@ -369,10 +372,28 @@ window.onload = async function () {
     );
   }
 
+  function armSequenceTimeout() {
+    window.clearTimeout(sequenceTimer);
+    sequenceTimer = window.setTimeout(() => {
+      matcher.reset();
+      hintsOverlay.onReset();
+    }, SEQUENCE_TIMEOUT_MS);
+  }
+
   function handleKeyDown(e: KeyboardEvent) {
-    if (!e.isTrusted || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    if (!e.isTrusted || e.ctrlKey || e.metaKey || e.altKey) return;
     const key = normalizeKeyEvent(e);
     if (key === null) return; // a modifier keydown itself (e.g. Shift)
+
+    if (e.repeat) {
+      // Keep swallowing the held key of a pending sequence so the page
+      // never sees the repeats; the hint stays up until the key releases.
+      if (!typingIntent && key === heldPrefixToken) {
+        e.preventDefault();
+        e.stopImmediatePropagation();
+      }
+      return;
+    }
 
     if (typingIntent) {
       // The user is deliberately typing (chat message, LP amount): never
@@ -395,12 +416,14 @@ window.onload = async function () {
       e.stopImmediatePropagation();
       hintsOverlay.hide();
       matcher.reset();
+      heldPrefixToken = null;
       window.clearTimeout(sequenceTimer);
       return;
     }
 
     const result = matcher.step(key);
     window.clearTimeout(sequenceTimer);
+    heldPrefixToken = null;
 
     if (result.type === "nomatch") {
       hintsOverlay.onReset();
@@ -422,10 +445,9 @@ window.onload = async function () {
 
     if (result.type === "prefix") {
       hintsOverlay.onPrefix(matcher.pendingPrefix(), matcher.continuations());
-      sequenceTimer = window.setTimeout(() => {
-        matcher.reset();
-        hintsOverlay.onReset();
-      }, SEQUENCE_TIMEOUT_MS);
+      // the key is still physically down: the timeout is armed on keyup, so
+      // holding a prefix key keeps the sequence (and its hint) alive
+      heldPrefixToken = key;
       return;
     }
 
@@ -443,6 +465,17 @@ window.onload = async function () {
     if (!e.isTrusted || typingIntent) return;
     const token = normalizeKeyEvent(e);
     if (token === null) return;
+
+    // The held prefix key was released: only now start the inter-key
+    // timeout, so a held key keeps the pending sequence and hint alive.
+    if (
+      heldPrefixToken !== null &&
+      parseToken(token).key === parseToken(heldPrefixToken).key
+    ) {
+      heldPrefixToken = null;
+      armSequenceTimeout();
+    }
+
     // compare base keys so releasing Shift before the letter still releases
     const isThumbsUpKey = hotkeyHashMap.some(
       (entry) =>
@@ -457,6 +490,15 @@ window.onload = async function () {
   // (which auto-focus the chat input on any keypress).
   window.addEventListener("keydown", handleKeyDown, true);
   window.addEventListener("keyup", handleKeyUp, true);
+
+  // If focus leaves the page while a prefix key is held, its keyup is lost —
+  // abandon the pending sequence instead of leaving it stuck.
+  window.addEventListener("blur", () => {
+    matcher.reset();
+    hintsOverlay.onReset();
+    heldPrefixToken = null;
+    window.clearTimeout(sequenceTimer);
+  });
 
   // Clicking into a text field (chat, LP box, search) is deliberate typing.
   window.addEventListener(
