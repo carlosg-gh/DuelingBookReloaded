@@ -5,11 +5,8 @@ import {
   removeDarkMode,
 } from "./utilities/darkModeUtility";
 import { autoConnect, skipIntro } from "./utilities/optionsUtility";
-import {
-  loadHotkeysConfig,
-  getActionsForHotkey,
-} from "./utilities/configUtility";
-import { debounce } from "lodash";
+import { loadHotkeysConfig, HotkeyEntry } from "./utilities/configUtility";
+import { SequenceMatcher } from "./utilities/sequenceMatcher";
 
 let view: HTMLElement | null;
 let closeViewButton: HTMLElement | null;
@@ -148,10 +145,20 @@ window.onload = async function () {
     Target: () => playCard("Target"),
   };
 
-  let hotkeyHashMap = await loadHotkeysConfig();
+  let hotkeyHashMap: HotkeyEntry[] = [];
+  let matcher = new SequenceMatcher([]);
+  let sequenceTimer: number | undefined;
+
+  function setHotkeys(entries: HotkeyEntry[]) {
+    hotkeyHashMap = entries;
+    matcher = new SequenceMatcher(entries);
+    window.clearTimeout(sequenceTimer);
+  }
+
+  setHotkeys(await loadHotkeysConfig());
 
   async function fetchHotKeyHashMap() {
-    hotkeyHashMap = await loadHotkeysConfig();
+    setHotkeys(await loadHotkeysConfig());
     console.log("Loaded hotkeys configuration:", hotkeyHashMap);
   }
 
@@ -166,10 +173,10 @@ window.onload = async function () {
       options.autoConnect = false;
       options.isNightMode = false;
       removeDarkMode();
-      hotkeyHashMap = [];
+      setHotkeys([]);
     } else {
       if (options.disableHotkeys) {
-        hotkeyHashMap = [];
+        setHotkeys([]);
       } else {
         fetchHotKeyHashMap();
       }
@@ -199,10 +206,10 @@ window.onload = async function () {
           newOptions.autoConnect = false;
           newOptions.isNightMode = false;
           removeDarkMode();
-          hotkeyHashMap = [];
+          setHotkeys([]);
         } else {
           if (newOptions.disableHotkeys) {
-            hotkeyHashMap = [];
+            setHotkeys([]);
           } else {
             fetchHotKeyHashMap();
           }
@@ -220,7 +227,7 @@ window.onload = async function () {
   chrome.runtime.onMessage.addListener((message, sender, sendResponse) => {
     if (message.type === "HOTKEYS_CHANGED") {
       console.log("Received updated hotkeys:", message.payload);
-      hotkeyHashMap = message.payload; // update the hotkeys map.
+      setHotkeys(message.payload);
       return true;
     }
   });
@@ -230,8 +237,10 @@ window.onload = async function () {
   const chatInput = document.querySelectorAll(
     "input.cin_txt",
   )[1] as HTMLInputElement;
-  let chatInputFocused = false;
-  let LPInputFocused = false;
+  // True only while the user deliberately types in a text field (opened chat,
+  // clicked an input, adjusting LP). DuelingBook auto-focusing the chat input
+  // on a stray keypress does NOT set this.
+  let typingIntent = false;
   const thunk = document.getElementById("think_btn");
   const thumbsUp = document.getElementById("good_btn");
   const graveyard = document.getElementById("grave_hidden");
@@ -250,20 +259,23 @@ window.onload = async function () {
       bubbles: true,
     });
 
-    handleChatBox();
+    chatInput.focus();
+    typingIntent = true;
     setTimeout(() => {
       chatInput.dispatchEvent(enterEvent);
+      chatInput.blur();
+      typingIntent = false;
     }, 10);
   }
 
   function subLP() {
     if (subButton) subButton.click();
-    LPInputFocused = true;
+    typingIntent = true;
   }
 
   function addLP() {
     if (addButton) addButton.click();
-    LPInputFocused = true;
+    typingIntent = true;
   }
 
   function toggleGraveYardView() {
@@ -308,15 +320,13 @@ window.onload = async function () {
   }
 
   function handleChatBox() {
-    if (!chatInputFocused && !LPInputFocused) {
+    const active = document.activeElement;
+    if (typingIntent || active === chatInput || active === LPInput) {
+      if (active instanceof HTMLElement) active.blur();
+      typingIntent = false;
+    } else {
       chatInput.focus();
-      chatInputFocused = true;
-    } else if (LPInputFocused) {
-      LPInput?.blur();
-      LPInputFocused = false;
-    } else if (chatInputFocused) {
-      chatInput.blur();
-      chatInputFocused = false;
+      typingIntent = true;
     }
   }
 
@@ -343,55 +353,101 @@ window.onload = async function () {
     }
   }
 
+  // max pause between the keys of a sequence before it resets
+  const SEQUENCE_TIMEOUT_MS = 800;
+
+  function isTextField(target: EventTarget | null): boolean {
+    return (
+      target instanceof HTMLInputElement ||
+      target instanceof HTMLTextAreaElement
+    );
+  }
+
   function handleKeyDown(e: KeyboardEvent) {
-    const handler = e.key.toLowerCase();
-    if (!(e.target instanceof HTMLInputElement) || handler === "enter") {
-      console.log("Key pressed:", handler);
-      const actions = getActionsForHotkey(handler, hotkeyHashMap);
-      console.log("actions", actions);
-      if (actions.length > 0) {
-        actions.forEach((action) => {
-          const hotkeyEntry = hotkeyHashMap.find((hk) => hk.action === action);
-          if (hotkeyEntry && hotkeyEntry.disabled) {
-            console.log("Hotkey is disabled:", action);
-            return;
-          }
-          if (action in actionFunctionMap) {
-            actionFunctionMap[action]();
-            console.log("Action executed:", action);
-          } else {
-            console.log("Action function not found for:", action);
-          }
-        });
+    if (!e.isTrusted || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
+    const key = e.key.toLowerCase();
+
+    if (typingIntent) {
+      // The user is deliberately typing (chat message, LP amount): never
+      // intercept. Enter sends / Escape cancels — both end typing mode, but
+      // only after the page has processed the key against the input.
+      if (key === "enter" || key === "escape") {
+        typingIntent = false;
+        setTimeout(() => {
+          const active = document.activeElement;
+          if (isTextField(active)) (active as HTMLElement).blur();
+        }, 0);
+      }
+      return;
+    }
+
+    const result = matcher.step(key);
+    window.clearTimeout(sequenceTimer);
+
+    if (result.type === "nomatch") {
+      // Unbound key: let DuelingBook have it. If the page responds by
+      // focusing the chat input (its type-to-chat feature), the user is now
+      // typing a message — stop treating keys as hotkeys.
+      setTimeout(() => {
+        if (document.activeElement === chatInput) typingIntent = true;
+      }, 0);
+      return;
+    }
+
+    // The key matches (or starts) a binding: swallow it before the page's
+    // own handler can steal focus into the chat input.
+    e.preventDefault();
+    e.stopImmediatePropagation();
+    const active = document.activeElement;
+    if (isTextField(active)) (active as HTMLElement).blur();
+
+    if (result.type === "prefix") {
+      sequenceTimer = window.setTimeout(
+        () => matcher.reset(),
+        SEQUENCE_TIMEOUT_MS,
+      );
+      return;
+    }
+
+    for (const action of result.actions) {
+      if (action in actionFunctionMap) {
+        actionFunctionMap[action]();
       } else {
-        console.log("No matching actions found.");
+        console.log("Action function not found for:", action);
       }
     }
   }
 
   function handleKeyUp(e: KeyboardEvent) {
-    const handler = e.key.toLowerCase();
-
-    if (
-      !(e.target instanceof HTMLInputElement) &&
-      chatInput !== document.activeElement &&
-      LPInput !== document.activeElement
-    ) {
-      console.log(chatInput !== document.activeElement);
-      const actions = getActionsForHotkey(handler, hotkeyHashMap);
-      if (actions.includes("Thumbs Up")) {
-        thumbsUpRelease();
-      }
-    }
+    if (!e.isTrusted || typingIntent) return;
+    const key = e.key.toLowerCase();
+    const isThumbsUpKey = hotkeyHashMap.some(
+      (entry) =>
+        !entry.disabled && entry.action === "Thumbs Up" && entry.hotkey === key,
+    );
+    if (isThumbsUpKey) thumbsUpRelease();
   }
 
-  // adjust this timer for user responsiveness
-  const debouncedKeyDown = debounce(
-    (e: KeyboardEvent) => handleKeyDown(e),
-    150,
-  );
-  const debouncedKeyUp = debounce((e: KeyboardEvent) => handleKeyUp(e), 160);
+  // Capture phase on window so these run before DuelingBook's own handlers
+  // (which auto-focus the chat input on any keypress).
+  window.addEventListener("keydown", handleKeyDown, true);
+  window.addEventListener("keyup", handleKeyUp, true);
 
-  document.addEventListener("keydown", debouncedKeyDown);
-  document.addEventListener("keyup", debouncedKeyUp);
+  // Clicking into a text field (chat, LP box, search) is deliberate typing.
+  window.addEventListener(
+    "mousedown",
+    (e) => {
+      if (isTextField(e.target)) typingIntent = true;
+    },
+    true,
+  );
+
+  // Leaving a text field by any means ends typing mode.
+  window.addEventListener(
+    "focusout",
+    (e) => {
+      if (isTextField(e.target)) typingIntent = false;
+    },
+    true,
+  );
 };

@@ -1,7 +1,16 @@
 export interface HotkeyEntry {
   action: string;
+  // A single key ("v") or a space-separated key sequence ("v e").
   hotkey: string;
   disabled: boolean;
+}
+
+export function parseSequence(hotkey: string): string[] {
+  return hotkey.split(" ").filter((key) => key.length > 0);
+}
+
+export function formatSequence(keys: string[]): string {
+  return keys.join(" ");
 }
 
 export async function loadHotkeysConfig(): Promise<HotkeyEntry[]> {
@@ -80,18 +89,4 @@ export function getDefaultHotkeys(): HotkeyEntry[] {
     { action: "Add LP", hotkey: "+", disabled: false },
     { action: "Target", hotkey: "r", disabled: false },
   ];
-}
-
-export function getActionsForHotkey(
-  hotkey: string,
-  hotkeyMap: HotkeyEntry[],
-): string[] {
-  const matchingActions: string[] = [];
-
-  for (const entry of hotkeyMap) {
-    if (entry.hotkey === hotkey) {
-      matchingActions.push(entry.action);
-    }
-  }
-  return matchingActions;
 }
