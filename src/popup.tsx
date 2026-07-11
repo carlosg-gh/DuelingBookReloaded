@@ -122,7 +122,7 @@ const Popup = () => {
         <div id="button-container" className="flex justify-around w-full">
           <Button
             buttonText="Bugs & Feedback"
-            buttonUrl="https://github.com/carlosg-gh/DuelingBookEnhanced/issues"
+            buttonUrl="https://github.com/carlosg-gh/DuelingBookReloaded/issues"
           />
           <Button
             buttonText={"Open DB"}

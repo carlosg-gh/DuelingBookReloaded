@@ -64,7 +64,7 @@ DuelingBookReloaded is a collection of quality-of-life features for DuelingBook:
 
 ## Installation
 
-1. Grab the latest `DuelingBookReloaded-v*.zip` from the [Releases page](https://github.com/carlosg-gh/DuelingBookEnhanced/releases) and unzip it — or clone this repo and run `npm install && npm run build` to produce the `dist/` folder yourself.
+1. Grab the latest `DuelingBookReloaded-v*.zip` from the [Releases page](https://github.com/carlosg-gh/DuelingBookReloaded/releases) and unzip it — or clone this repo and run `npm install && npm run build` to produce the `dist/` folder yourself.
 
 2. Go to `chrome://extensions`, enable **Developer mode**, and click **Load unpacked**.
 
@@ -80,7 +80,7 @@ DuelingBookReloaded is a collection of quality-of-life features for DuelingBook:
 
 3. **Full Settings**: Open the options page via the gear icon in the popup, or by right-clicking the extension and choosing `Options`. Customize hotkeys (single keys or sequences) in the **Customize Hotkeys** section.
 
-4. **Feedback**: Found a bug or want a feature? [Open an issue](https://github.com/carlosg-gh/DuelingBookEnhanced/issues).
+4. **Feedback**: Found a bug or want a feature? [Open an issue](https://github.com/carlosg-gh/DuelingBookReloaded/issues).
 
 ## Compatibility
 

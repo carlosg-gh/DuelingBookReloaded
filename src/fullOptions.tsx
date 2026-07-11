@@ -113,7 +113,7 @@ export const Options = () => {
                 </span>
                 <Button
                   buttonText="Bugs & Feedback"
-                  buttonUrl="https://github.com/carlosg-gh/DuelingBookEnhanced/issues"
+                  buttonUrl="https://github.com/carlosg-gh/DuelingBookReloaded/issues"
                 />
               </div>
               <div className="flex items-center">
