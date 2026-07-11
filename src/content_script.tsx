@@ -1,4 +1,4 @@
-import { OptionsTypes } from "./utilities/optionsUtility";
+import { OptionsTypes, TouchMode } from "./utilities/optionsUtility";
 import {
   injectStylesheet,
   applyDarkMode,
@@ -9,6 +9,8 @@ import { loadHotkeysConfig, HotkeyEntry } from "./utilities/configUtility";
 import { SequenceMatcher } from "./utilities/sequenceMatcher";
 import { normalizeKeyEvent, parseToken } from "./utilities/keyNormalization";
 import * as hintsOverlay from "./utilities/hintsOverlay";
+import { resolveTouchActive } from "./utilities/touchMenuData";
+import { enableTouchMode, disableTouchMode } from "./utilities/touchInput";
 
 let view: HTMLElement | null;
 let closeViewButton: HTMLElement | null;
@@ -171,6 +173,23 @@ window.onload = async function () {
 
   injectStylesheet("dark-mode.css");
   injectStylesheet("hints-overlay.css");
+  injectStylesheet("touch-mode.css");
+
+  // "auto" tracks the device's pointer capability live (e.g. a convertible
+  // switching to tablet mode, or DevTools touch emulation)
+  const coarsePointerQuery = window.matchMedia("(pointer: coarse)");
+  let currentTouchMode: TouchMode = "off";
+  function applyTouchMode(mode: TouchMode) {
+    currentTouchMode = mode;
+    if (resolveTouchActive(mode, coarsePointerQuery.matches)) {
+      enableTouchMode();
+    } else {
+      disableTouchMode();
+    }
+  }
+  coarsePointerQuery.addEventListener("change", () =>
+    applyTouchMode(currentTouchMode),
+  );
 
   chrome.storage.sync.get("options", (result) => {
     options = result.options as OptionsTypes;
@@ -182,6 +201,7 @@ window.onload = async function () {
       options.isNightMode = false;
       removeDarkMode();
       setHotkeys([]);
+      applyTouchMode("off");
     } else {
       // options is undefined on a fresh install (nothing stored yet)
       if (options?.disableHotkeys) {
@@ -196,6 +216,7 @@ window.onload = async function () {
         autoConnect(skipIntroButton, enterButton);
       if (options && options.isNightMode) applyDarkMode();
       if (options && !options.isNightMode) removeDarkMode();
+      applyTouchMode(options?.touchMode ?? "auto");
     }
     chrome.storage.onChanged.addListener(handleOptionsChange);
   });
@@ -216,6 +237,7 @@ window.onload = async function () {
           newOptions.isNightMode = false;
           removeDarkMode();
           setHotkeys([]);
+          applyTouchMode("off");
         } else {
           if (newOptions.disableHotkeys) {
             setHotkeys([]);
@@ -228,6 +250,7 @@ window.onload = async function () {
           if (newOptions.autoConnect) autoConnect(skipIntroButton, enterButton);
           if (newOptions.isNightMode) applyDarkMode();
           if (!newOptions.isNightMode) removeDarkMode();
+          applyTouchMode(newOptions.touchMode ?? "auto");
         }
       }
     }

@@ -5,12 +5,36 @@ import {
   getOptionsFromStorage,
   saveOptionsToStorage,
   OptionsTypes,
+  TouchMode,
 } from "./utilities/optionsUtility";
 import ReactDOM from "react-dom";
 import CustomizeHotkeys from "./CustomizeHotkeys";
 import KnownIssues from "./KnownIssues";
 import Attribution from "./components/Attribution";
 import GithubCorner from "./components/GithubCorner";
+
+type InputItem =
+  | {
+      type: "checkbox";
+      id: string;
+      label: string;
+      checked: boolean;
+      onChange: () => void;
+    }
+  | {
+      type: "select";
+      id: string;
+      label: string;
+      value: string;
+      choices: { value: string; label: string }[];
+      onSelect: (value: string) => void;
+    };
+
+const touchModeChoices = [
+  { value: "off", label: "Off" },
+  { value: "on", label: "On" },
+  { value: "auto", label: "Auto (touch device)" },
+];
 
 export const Options = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -23,6 +47,7 @@ export const Options = () => {
     skipIntro: false,
     autoConnect: false,
     isNightMode: false,
+    touchMode: "auto",
   });
 
   // load options from storage when the popup is opened
@@ -86,17 +111,36 @@ export const Options = () => {
                   className={`flex items-center ${options.disableAllOptions && index > 0 ? "opacity-50" : ""}`}
                   key={item.id}
                 >
-                  <input
-                    id={item.id}
-                    type="checkbox"
-                    className={`mr-2 ${index > 0 && options.disableAllOptions ? "" : "cursor-pointer"}`}
-                    checked={item.checked}
-                    onChange={() => {
-                      item.onChange();
-                      toggleSavedMessage();
-                    }}
-                    disabled={index > 0 && options.disableAllOptions}
-                  />
+                  {item.type === "checkbox" ? (
+                    <input
+                      id={item.id}
+                      type="checkbox"
+                      className={`mr-2 ${index > 0 && options.disableAllOptions ? "" : "cursor-pointer"}`}
+                      checked={item.checked}
+                      onChange={() => {
+                        item.onChange();
+                        toggleSavedMessage();
+                      }}
+                      disabled={index > 0 && options.disableAllOptions}
+                    />
+                  ) : (
+                    <select
+                      id={item.id}
+                      className={`mr-2 border rounded ${index > 0 && options.disableAllOptions ? "" : "cursor-pointer"}`}
+                      value={item.value}
+                      onChange={(e) => {
+                        item.onSelect(e.target.value);
+                        toggleSavedMessage();
+                      }}
+                      disabled={index > 0 && options.disableAllOptions}
+                    >
+                      {item.choices.map((choice) => (
+                        <option key={choice.value} value={choice.value}>
+                          {choice.label}
+                        </option>
+                      ))}
+                    </select>
+                  )}
                   <label
                     className={`flex items-center w-max ${index > 0 && options.disableAllOptions ? "" : "cursor-pointer"}`}
                     htmlFor={item.id}
@@ -136,8 +180,9 @@ export const Options = () => {
     }
   };
 
-  const inputItems = [
+  const inputItems: InputItem[] = [
     {
+      type: "checkbox",
       id: "allOptions",
       label: "Disable All Options",
       checked: options.disableAllOptions,
@@ -148,6 +193,7 @@ export const Options = () => {
         }),
     },
     {
+      type: "checkbox",
       id: "disableHotkeys",
       label: "Disable Hotkeys",
       checked: options.disableHotkeys,
@@ -155,12 +201,14 @@ export const Options = () => {
         setOptions({ ...options, disableHotkeys: !options.disableHotkeys }),
     },
     {
+      type: "checkbox",
       id: "skipIntro",
       label: "Skip Intro",
       checked: options.skipIntro,
       onChange: () => setOptions({ ...options, skipIntro: !options.skipIntro }),
     },
     {
+      type: "checkbox",
       id: "autoConnect",
       label: "Auto-Connect (must be logged in!)",
       checked: options.autoConnect,
@@ -168,11 +216,21 @@ export const Options = () => {
         setOptions({ ...options, autoConnect: !options.autoConnect }),
     },
     {
+      type: "checkbox",
       id: "nightMode",
       label: "Night Mode",
       checked: options.isNightMode,
       onChange: () =>
         setOptions({ ...options, isNightMode: !options.isNightMode }),
+    },
+    {
+      type: "select",
+      id: "touchMode",
+      label: "Touchscreen Mode",
+      value: options.touchMode,
+      choices: touchModeChoices,
+      onSelect: (value) =>
+        setOptions({ ...options, touchMode: value as TouchMode }),
     },
   ];
 

@@ -59,6 +59,22 @@ manifest lives in `public/manifest.json` and is copied into `dist/` verbatim.
   whichever is present.
 - `src/utilities/hotkeyValidation.ts` — options-page conflict rule: two
   bindings conflict when one sequence equals or is a prefix of the other.
+- Touchscreen mode (option `touchMode`: on/off/auto, auto =
+  `matchMedia("(pointer: coarse)")`): tapping a duel card or pile opens a
+  radial fan of large action buttons that drives DuelingBook's own (CSS-hidden)
+  card menu. Modules: `src/utilities/touchMenuData.ts` (pure: action→group
+  table, `buildFanModel`, `resolveTouchActive`), `touchFanLayout.ts` (pure:
+  ring/grid geometry in viewport px), `touchNativeMenu.ts` (opens/reads/
+  clicks/closes `#card_menu` via synthetic MouseEvents), `touchFanOverlay.ts`
+  (DOM singleton `#dbr-touch-fan`, hintsOverlay pattern, divs only),
+  `touchInput.ts` (window capture-phase touch classifier: fan → interactive
+  elements → cards/piles → generic tap-to-hover shim; toggles `dbr-touch` on
+  `<html>`), styled by `src/styles/touch-mode.css`. Mouse clicks open the fan
+  too (the native menu is invisible while the mode is on), with a capture-phase
+  guard that swallows trusted card/pile mouseover/mouseout while the fan is
+  open — otherwise mousing toward a fan button across neighboring cards would
+  swap DuelingBook's menu underneath it and a fan click would act on the
+  wrong card.
 - `src/data/validHotkeys.ts` — whitelist of assignable keys.
 - `src/data/hotkeySections.ts` — options-page grouping of actions.
 
@@ -89,6 +105,16 @@ type-to-chat keeps working.
   labels; never `label.split("/")`.
 - Options-page keys captured by `HotkeyRecorder` must be confirmed with the
   Done **button** — Enter and Escape are themselves assignable keys.
+- In touch mode the native `#card_menu` is hidden with `opacity: 0` but MUST
+  stay in the DOM with real layout — `playCard` and the fan click its spans,
+  and DuelingBook's `:visible` checks must keep passing. Never `display:none`
+  it. When closed, DuelingBook *detaches* `#card_menu` from the DOM
+  (presence = open). The content script is isolated-world: DuelingBook is
+  driven only via synthetic MouseEvents (`mouseover` on a card's `.content`
+  opens the menu synchronously; `mouseout` with clientY *below* the card's
+  bottom closes it — coords above are treated as moving into the menu), and
+  `showMenu` can silently refuse (card tweening, overlay up), so success is
+  verified by reading `#card_menu` back.
 - Testing anything that touches `chrome.*` requires mocks; prefer keeping
   logic in pure modules (like the matcher/validator) instead.
 

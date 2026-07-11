@@ -1,21 +1,32 @@
+// "auto" enables touchscreen mode only when the device reports a coarse
+// pointer (matchMedia("(pointer: coarse)")).
+export type TouchMode = "on" | "off" | "auto";
+
 export interface OptionsTypes {
   disableAllOptions: boolean;
   disableHotkeys: boolean;
   skipIntro: boolean;
   autoConnect: boolean;
   isNightMode: boolean;
+  touchMode: TouchMode;
 }
+
+const defaultOptions: OptionsTypes = {
+  disableAllOptions: false,
+  disableHotkeys: false,
+  skipIntro: false,
+  autoConnect: false,
+  isNightMode: false,
+  touchMode: "auto",
+};
 
 export const getOptionsFromStorage = (
   callback: (options: OptionsTypes) => void,
 ) => {
   chrome.storage.sync.get(["options"], (result) => {
-    const options = result.options || {
-      disableAllOptions: false,
-      skipIntro: false,
-      autoConnect: false,
-      isNightMode: false,
-    };
+    // spread order backfills fields missing from configs stored by older
+    // versions without clobbering what the user has set
+    const options = { ...defaultOptions, ...(result.options || {}) };
     callback(options);
   });
 };
