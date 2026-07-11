@@ -16,7 +16,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/carlosg-gh/DuelingBookEnhanced.git"
+    "url": "https://github.com/carlosg-gh/DuelingBookReloaded.git"
   },
   "dependencies": {
     "lodash": "^4.17.21",
