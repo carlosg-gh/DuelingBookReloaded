@@ -21,10 +21,21 @@ module.exports = {
     },
     optimization: {
         splitChunks: {
-            name: "vendor",
-            chunks(chunk) {
-                return chunk.name !== 'background';
-            }
+            cacheGroups: {
+                // only node_modules goes into vendor.js (the static HTML
+                // pages and the manifest load js/vendor.js explicitly);
+                // shared src/ modules are duplicated into each entry
+                default: false,
+                defaultVendors: false,
+                vendor: {
+                    name: "vendor",
+                    test: /[\\/]node_modules[\\/]/,
+                    enforce: true,
+                    chunks(chunk) {
+                        return chunk.name !== 'background';
+                    }
+                },
+            },
         },
     },
     module: {
@@ -59,6 +70,7 @@ module.exports = {
             patterns: [
                 { from: ".", to: "../", context: "public" },
                 { from: path.join(srcDir, "styles", "dark-mode.css"), to: "../css" },
+                { from: path.join(srcDir, "styles", "hints-overlay.css"), to: "../css" },
             ],
             options: {},
         }),

@@ -46,6 +46,11 @@ export const hotkeySections = [
     actions: ["Toggle Chat Box", "Think", "Thumbs Up"],
     note: null,
   },
+  {
+    title: "Extension",
+    actions: ["Show Hotkey Hints"],
+    note: "Note: Shows an overlay of all enabled hotkeys. Press again or Escape to close.",
+  },
 ];
 
 export const defaultDisabledActions = ["Close View Menu", "Toggle Chat Box"];
