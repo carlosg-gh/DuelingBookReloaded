@@ -7,7 +7,10 @@ export interface HotkeyEntry {
 export async function loadHotkeysConfig(): Promise<HotkeyEntry[]> {
   return new Promise<HotkeyEntry[]>((resolve) => {
     chrome.storage.sync.get({ hotkeysConfig: [] }, (data) => {
-      const hotkeys = data.hotkeysConfig.length > 0 ? data.hotkeysConfig : getDefaultHotkeys();
+      const hotkeys =
+        data.hotkeysConfig.length > 0
+          ? data.hotkeysConfig
+          : getDefaultHotkeys();
       resolve(hotkeys);
     });
   });
@@ -21,7 +24,7 @@ export async function saveHotkeysConfig(hotkeys: HotkeyEntry[]): Promise<void> {
         for (const tab of tabs) {
           if (tab.id !== undefined) {
             chrome.tabs.sendMessage(tab.id, {
-              type: 'HOTKEYS_CHANGED',
+              type: "HOTKEYS_CHANGED",
               payload: hotkeys,
             });
           }
@@ -31,7 +34,6 @@ export async function saveHotkeysConfig(hotkeys: HotkeyEntry[]): Promise<void> {
     });
   });
 }
-
 
 // don't forget to update the actionsFunctionMap in content_script.tsx
 // each object needs a prop called disable, auto set to false
@@ -80,7 +82,10 @@ export function getDefaultHotkeys(): HotkeyEntry[] {
   ];
 }
 
-export function getActionsForHotkey(hotkey: string, hotkeyMap: HotkeyEntry[]): string[] {
+export function getActionsForHotkey(
+  hotkey: string,
+  hotkeyMap: HotkeyEntry[],
+): string[] {
   const matchingActions: string[] = [];
 
   for (const entry of hotkeyMap) {

@@ -1,5 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
-import { loadHotkeysConfig, saveHotkeysConfig } from "../utilities/configUtility";
+import {
+  loadHotkeysConfig,
+  saveHotkeysConfig,
+} from "../utilities/configUtility";
 import { validHotkeys } from "../data/validHotkeys";
 import { splitActions } from "../utilities/actionsManipulations";
 import { defaultDisabledActions } from "../data/hotkeySections";
@@ -14,9 +17,20 @@ interface HotkeySectionProps {
   toggleSavedMessage: () => void;
 }
 
-export const HotkeySection: React.FC<HotkeySectionProps> = ({ title, actions, note, selectedHotkeys, setSelectedHotkeys, resetCounter, toggleSavedMessage }) => {
-  const [isHotkeyInvalid, setIsHotkeyInvalid] = useState(false)
-  const [conflictState, setConflictState] = useState<ConflictState>({ action: '', hotkey: '' });
+export const HotkeySection: React.FC<HotkeySectionProps> = ({
+  title,
+  actions,
+  note,
+  selectedHotkeys,
+  setSelectedHotkeys,
+  resetCounter,
+  toggleSavedMessage,
+}) => {
+  const [isHotkeyInvalid, setIsHotkeyInvalid] = useState(false);
+  const [conflictState, setConflictState] = useState<ConflictState>({
+    action: "",
+    hotkey: "",
+  });
   const [disabledActions, setDisabledActions] = useState<string[]>([]);
 
   type ConflictState = {
@@ -24,9 +38,11 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({ title, actions, no
     hotkey: string;
   };
 
-  const selectRefs = useRef<{ [key: string]: React.RefObject<HTMLSelectElement> }>({});
+  const selectRefs = useRef<{
+    [key: string]: React.RefObject<HTMLSelectElement>;
+  }>({});
 
-  actions.forEach(action => {
+  actions.forEach((action) => {
     if (!selectRefs.current[action]) {
       selectRefs.current[action] = React.createRef();
     }
@@ -35,7 +51,7 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({ title, actions, no
   useEffect(() => {
     async function loadAndLogHotkeys() {
       const currentHotkeys = await loadHotkeysConfig();
-      console.log('current hotkeys', currentHotkeys);
+      console.log("current hotkeys", currentHotkeys);
     }
     loadAndLogHotkeys();
   }, [resetCounter]);
@@ -44,7 +60,7 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({ title, actions, no
     async function initializeSelectedHotkeys() {
       try {
         const currentHotkeys = await loadHotkeysConfig();
-        console.log('current hotkeys', currentHotkeys);
+        console.log("current hotkeys", currentHotkeys);
 
         const initialSelectedHotkeys: { [key: string]: string } = {};
         actions.forEach((action) => {
@@ -59,9 +75,8 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({ title, actions, no
           .map((hotkeyItem) => hotkeyItem.action as string);
 
         setDisabledActions(newDisabledActions);
-
       } catch (error) {
-        console.error('Error loading hotkeys:', error);
+        console.error("Error loading hotkeys:", error);
       }
     }
 
@@ -71,9 +86,9 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({ title, actions, no
   const toggleDisable = async (action: string) => {
     try {
       const currentHotkeys = await loadHotkeysConfig();
-      console.log('current hotkeys:', currentHotkeys, 'action toggled', action)
+      console.log("current hotkeys:", currentHotkeys, "action toggled", action);
 
-      const actionParts = splitActions(action)
+      const actionParts = splitActions(action);
       const actions = [];
 
       if (actionParts.length > 1) {
@@ -95,36 +110,43 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({ title, actions, no
         .map((hotkeyItem) => hotkeyItem.action as string);
 
       setDisabledActions(newDisabledActions);
-      console.log(newDisabledActions, newDisabledActions)
-      toggleSavedMessage()
-
+      console.log(newDisabledActions, newDisabledActions);
+      toggleSavedMessage();
     } catch (error) {
-      console.error('Error loading or updating hotkeys:', error);
+      console.error("Error loading or updating hotkeys:", error);
     }
   };
-
 
   const handleHotkeyChange = async (action: string, hotkey: string) => {
     try {
       const currentHotkeys = await loadHotkeysConfig();
 
       // check if the new hotkey is already assigned to another action.
-      const alreadyMappedAction = currentHotkeys.find(hotkeyItem => hotkeyItem.hotkey === hotkey);
-      if (alreadyMappedAction && hotkey !== '') {
-        setIsHotkeyInvalid(true)
-        setConflictState({ action: `${alreadyMappedAction.action}`, hotkey: `${hotkey}` });
+      const alreadyMappedAction = currentHotkeys.find(
+        (hotkeyItem) => hotkeyItem.hotkey === hotkey,
+      );
+      if (alreadyMappedAction && hotkey !== "") {
+        setIsHotkeyInvalid(true);
+        setConflictState({
+          action: `${alreadyMappedAction.action}`,
+          hotkey: `${hotkey}`,
+        });
 
-        console.log(`The hotkey: ${hotkey} is already mapped to the action ${alreadyMappedAction.action}`);
+        console.log(
+          `The hotkey: ${hotkey} is already mapped to the action ${alreadyMappedAction.action}`,
+        );
 
         setSelectedHotkeys({
           ...selectedHotkeys,
-          [action]: currentHotkeys.find(hotkey => hotkey.action === action)?.hotkey || ''
+          [action]:
+            currentHotkeys.find((hotkey) => hotkey.action === action)?.hotkey ||
+            "",
         });
 
         return;
       }
 
-      const actionParts = splitActions(action)
+      const actionParts = splitActions(action);
       const actions = [];
 
       if (actionParts.length > 1) {
@@ -149,21 +171,20 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({ title, actions, no
 
       updatedSelectedHotkeys[action] = hotkey;
 
-      console.log('current hotkeys updated', currentHotkeys)
+      console.log("current hotkeys updated", currentHotkeys);
       setSelectedHotkeys(updatedSelectedHotkeys);
       await saveHotkeysConfig(currentHotkeys);
-      toggleSavedMessage()
-      setIsHotkeyInvalid(false)
-      setConflictState({ action: '', hotkey: '' });
+      toggleSavedMessage();
+      setIsHotkeyInvalid(false);
+      setConflictState({ action: "", hotkey: "" });
     } catch (error) {
-      console.error('Error loading or updating hotkeys:', error);
+      console.error("Error loading or updating hotkeys:", error);
     }
   };
 
   useEffect(() => {
-    console.log('selected hotkeys changed', selectedHotkeys)
-  }, [selectedHotkeys])
-
+    console.log("selected hotkeys changed", selectedHotkeys);
+  }, [selectedHotkeys]);
 
   type HotkeyEntry = {
     action: string | string[];
@@ -173,51 +194,61 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({ title, actions, no
 
   function checkIfDisabled(action: string) {
     const actionParts = splitActions(action);
-    return actionParts.some(part => disabledActions.includes(part));
+    return actionParts.some((part) => disabledActions.includes(part));
   }
 
-
-  function findHotkeyByAction(action: string, hotkeysConfig: HotkeyEntry[]): string {
+  function findHotkeyByAction(
+    action: string,
+    hotkeysConfig: HotkeyEntry[],
+  ): string {
     for (const hotkeyItem of hotkeysConfig) {
       const actions = hotkeyItem.action;
       if (actions === action) {
         return hotkeyItem.hotkey;
-      } else if (action.includes('/')) {
+      } else if (action.includes("/")) {
         const actionParts = splitActions(action);
-        if (typeof actions === 'string' && actionParts.includes(actions)) {
+        if (typeof actions === "string" && actionParts.includes(actions)) {
           return hotkeyItem.hotkey;
-        } else if (Array.isArray(actions) && actionParts.some(part => actions.includes(part))) {
+        } else if (
+          Array.isArray(actions) &&
+          actionParts.some((part) => actions.includes(part))
+        ) {
           return hotkeyItem.hotkey;
         }
       }
     }
-    return '';
+    return "";
   }
 
   return (
-    <div className='container justify-center'>
-      <h1 className='text-2xl text-center font-bold bg-gray-200 rounded-lg mb-4'>{title}</h1>
-      <div className='flex flex-col gap-2'>
+    <div className="container justify-center">
+      <h1 className="text-2xl text-center font-bold bg-gray-200 rounded-lg mb-4">
+        {title}
+      </h1>
+      <div className="flex flex-col gap-2">
         {isHotkeyInvalid && conflictState && (
-          <h1 className="text-base font-bold text-red-500">Error! {conflictState.hotkey.toUpperCase()} is already mapped to {conflictState.action}! Pick another hotkey!</h1>
+          <h1 className="text-base font-bold text-red-500">
+            Error! {conflictState.hotkey.toUpperCase()} is already mapped to{" "}
+            {conflictState.action}! Pick another hotkey!
+          </h1>
         )}
-        {note && (
-          <h1 className='opacity-80'>({note})</h1>
-        )}
+        {note && <h1 className="opacity-80">({note})</h1>}
         {actions.map((action, index) => {
-          const isActionDisabled = checkIfDisabled(action)
-          const containerClassName = `flex gap-4 items-center ${isActionDisabled ? 'opacity-50' : ''}`;
+          const isActionDisabled = checkIfDisabled(action);
+          const containerClassName = `flex gap-4 items-center ${isActionDisabled ? "opacity-50" : ""}`;
 
           return (
             <>
               <div key={index} className={containerClassName}>
-                <h2 className='inline'>{action}</h2>
+                <h2 className="inline">{action}</h2>
                 <select
                   ref={selectRefs.current[action]}
                   value={selectedHotkeys[action]}
                   onChange={(e) => handleHotkeyChange(action, e.target.value)}
                   className="border rounded-md text-gray-600"
-                  disabled={isActionDisabled || defaultDisabledActions.includes(action)}
+                  disabled={
+                    isActionDisabled || defaultDisabledActions.includes(action)
+                  }
                 >
                   {validHotkeys.map((key) => (
                     <option key={key} value={key}>
