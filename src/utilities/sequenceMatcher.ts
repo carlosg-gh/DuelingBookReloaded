@@ -5,6 +5,13 @@ export type StepResult =
   | { type: "prefix" }
   | { type: "nomatch" };
 
+export interface Continuation {
+  // tokens remaining after the current prefix
+  rest: string[];
+  // actions fired when rest completes
+  actions: string[];
+}
+
 interface TrieNode {
   actions: string[];
   children: Map<string, TrieNode>;
@@ -27,6 +34,8 @@ function makeNode(): TrieNode {
 export class SequenceMatcher {
   private root: TrieNode = makeNode();
   private current: TrieNode = this.root;
+  // tokens consumed since root; mirrors `current`
+  private path: string[] = [];
 
   constructor(entries: HotkeyEntry[]) {
     for (const entry of entries) {
@@ -48,6 +57,30 @@ export class SequenceMatcher {
 
   reset(): void {
     this.current = this.root;
+    this.path = [];
+  }
+
+  /** Tokens of the currently pending (incomplete) sequence. */
+  pendingPrefix(): string[] {
+    return [...this.path];
+  }
+
+  /**
+   * All bindings reachable from the current position: the remaining tokens
+   * and the actions they complete. At the root this lists every binding.
+   */
+  continuations(): Continuation[] {
+    const result: Continuation[] = [];
+    const walk = (node: TrieNode, rest: string[]) => {
+      if (node.actions.length > 0) {
+        result.push({ rest, actions: [...node.actions] });
+      }
+      for (const [token, child] of node.children) {
+        walk(child, [...rest, token]);
+      }
+    };
+    walk(this.current, []);
+    return result;
   }
 
   /**
@@ -77,6 +110,7 @@ export class SequenceMatcher {
     }
 
     this.current = next;
+    this.path.push(key);
     return { type: "prefix" };
   }
 }

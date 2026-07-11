@@ -47,4 +47,25 @@ describe("findSequenceConflict", () => {
   it("ignores an empty candidate", () => {
     expect(findSequenceConflict([], ["Think"], entries)).toBeNull();
   });
+
+  it("does not conflict a shifted key with its plain form", () => {
+    expect(findSequenceConflict(["shift+g"], ["Think"], entries)).toBeNull();
+  });
+
+  it("conflicts a sequence with its shift-step prefix binding", () => {
+    expect(findSequenceConflict(["g", "shift+b"], ["Think"], entries)).toEqual({
+      action: "View Graveyard",
+      hotkey: "g",
+    });
+  });
+
+  it("conflicts equal shifted sequences", () => {
+    const withShift = [
+      ...entries,
+      { action: "Banish FD", hotkey: "s shift+b", disabled: false },
+    ];
+    expect(
+      findSequenceConflict(["s", "shift+b"], ["Think"], withShift),
+    ).toEqual({ action: "Banish FD", hotkey: "s shift+b" });
+  });
 });

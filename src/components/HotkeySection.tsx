@@ -7,7 +7,8 @@ import {
 import { findSequenceConflict } from "../utilities/hotkeyValidation";
 import { splitActions } from "../utilities/actionsManipulations";
 import { defaultDisabledActions } from "../data/hotkeySections";
-import { HotkeyRecorder, displaySequence } from "./HotkeyRecorder";
+import { HotkeyRecorder } from "./HotkeyRecorder";
+import { displaySequence } from "../utilities/keyNormalization";
 
 interface HotkeySectionProps {
   title: string;
