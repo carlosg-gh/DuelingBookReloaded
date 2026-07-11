@@ -1,5 +1,14 @@
 # Project Extension Version History
 
+## Version 0.4.1 (2026-07-11)
+
+### Bug Fixes
+- Disabled hotkeys no longer block their keys from being assigned to other actions. Re-enabling a hotkey whose binding now overlaps an active one shows an error instead of silently conflicting.
+- The sequence hint no longer flashes: it stays visible for as long as the first key is held, and the timeout only starts once the key is released. Held-key repeats are also swallowed so they can't leak into the chat box.
+
+### New Features
+- GitHub corner banner on the settings page linking to the project repository.
+
 ## Version 0.4.0 (2026-07-11)
 
 ### New Features

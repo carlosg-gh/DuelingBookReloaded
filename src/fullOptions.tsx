@@ -10,6 +10,7 @@ import ReactDOM from "react-dom";
 import CustomizeHotkeys from "./CustomizeHotkeys";
 import KnownIssues from "./KnownIssues";
 import Attribution from "./components/Attribution";
+import GithubCorner from "./components/GithubCorner";
 
 export const Options = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -177,6 +178,7 @@ export const Options = () => {
 
   return (
     <div className="container mx-auto flex items-stretch h-auto p-4">
+      <GithubCorner />
       <div className="flex flex-col bg-gray-300 rounded-lg shadow-lg mb-8">
         <div
           ref={containerRef}
