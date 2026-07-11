@@ -75,13 +75,28 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
     try {
       const currentHotkeys = await loadHotkeysConfig();
 
-      const actionParts = splitActions(action);
-      const actions = [];
+      const actions: string[] = splitActions(action);
 
-      if (actionParts.length > 1) {
-        actions.push(...actionParts);
-      } else {
-        actions.push(action);
+      // Re-enabling brings the binding back into play: reject it if the key
+      // was reassigned while this entry was disabled. Disabling is always
+      // fine.
+      const target = currentHotkeys.find((item) =>
+        actions.includes(item.action),
+      );
+      if (target?.disabled) {
+        const conflict = findSequenceConflict(
+          parseSequence(target.hotkey),
+          actions,
+          currentHotkeys,
+        );
+        if (conflict) {
+          setIsHotkeyInvalid(true);
+          setConflictState({
+            action: conflict.action,
+            hotkey: conflict.hotkey,
+          });
+          return;
+        }
       }
 
       for (const hotkeyItem of currentHotkeys) {
@@ -98,6 +113,8 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
 
       setDisabledActions(newDisabledActions);
       toggleSavedMessage();
+      setIsHotkeyInvalid(false);
+      setConflictState({ action: "", hotkey: "" });
     } catch (error) {
       console.error("Error loading or updating hotkeys:", error);
     }
@@ -180,7 +197,7 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
         {isHotkeyInvalid && conflictState && (
           <h1 className="text-base font-bold text-red-500">
             Error! That binding overlaps with {conflictState.action} (
-            {displaySequence(conflictState.hotkey)})! Pick another hotkey!
+            {displaySequence(conflictState.hotkey)})! Rebind one of them first!
           </h1>
         )}
         {note && <h1 className="opacity-80">({note})</h1>}

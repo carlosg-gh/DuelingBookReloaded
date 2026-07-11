@@ -15,6 +15,8 @@ function isPrefixOrEqual(a: string[], b: string[]): boolean {
  * a prefix of (or equal to) the other — the matcher could never distinguish
  * them. Entries whose action belongs to the group being edited are exempt:
  * compound rows ("To Hand/To Extra Deck") intentionally share one binding.
+ * Disabled entries are exempt too — they aren't in the matcher, so their
+ * keys are free (re-enabling them is validated at that point instead).
  */
 export function findSequenceConflict(
   candidate: string[],
@@ -24,6 +26,7 @@ export function findSequenceConflict(
   if (candidate.length === 0) return null;
 
   for (const entry of entries) {
+    if (entry.disabled) continue;
     if (editedActions.includes(entry.action)) continue;
     const existing = parseSequence(entry.hotkey);
     if (existing.length === 0) continue;

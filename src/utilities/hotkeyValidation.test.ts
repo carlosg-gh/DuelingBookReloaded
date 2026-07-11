@@ -59,6 +59,26 @@ describe("findSequenceConflict", () => {
     });
   });
 
+  it("ignores disabled entries entirely", () => {
+    const withDisabled: HotkeyEntry[] = [
+      { action: "View Graveyard", hotkey: "g", disabled: true },
+      { action: "View Extra Deck", hotkey: "v e", disabled: true },
+    ];
+    expect(findSequenceConflict(["g"], ["Think"], withDisabled)).toBeNull();
+    expect(findSequenceConflict(["v"], ["Think"], withDisabled)).toBeNull();
+  });
+
+  it("still conflicts with enabled entries when others are disabled", () => {
+    const mixed: HotkeyEntry[] = [
+      { action: "View Graveyard", hotkey: "g", disabled: true },
+      { action: "Think", hotkey: "t", disabled: false },
+    ];
+    expect(findSequenceConflict(["t"], ["Declare"], mixed)).toEqual({
+      action: "Think",
+      hotkey: "t",
+    });
+  });
+
   it("conflicts equal shifted sequences", () => {
     const withShift = [
       ...entries,
