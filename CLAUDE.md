@@ -32,10 +32,25 @@ manifest lives in `public/manifest.json` and is copied into `dist/` verbatim.
   `components/HotkeySection.tsx` → `components/HotkeyRecorder.tsx`).
 - `src/utilities/configUtility.ts` — hotkey persistence. Config is a flat
   `HotkeyEntry[]` (`{action, hotkey, disabled}`) under `hotkeysConfig` in
-  `chrome.storage.sync`. `hotkey` is a single key (`"v"`) or a
-  space-separated sequence (`"v e"`). `saveHotkeysConfig` broadcasts a
-  `HOTKEYS_CHANGED` runtime message that the content script uses to hot-swap
-  bindings without a page reload.
+  `chrome.storage.sync`. `hotkey` is a space-separated sequence of tokens;
+  a token is `["shift+"] base` (`"v"`, `"shift+b"`, `"s shift+b"`, `"f1"`).
+  Shift is meaningful only on letters/digits. `loadHotkeysConfig` backfills
+  defaults for actions missing from stored configs (new-version actions
+  appear on upgrade). `saveHotkeysConfig` broadcasts a `HOTKEYS_CHANGED`
+  runtime message that the content script uses to hot-swap bindings without
+  a page reload.
+- `src/utilities/keyNormalization.ts` — the single place keyboard events
+  become tokens (`normalizeKeyEvent`, via `e.code` for letters/digits so
+  Shift/CapsLock can't skew them) and tokens become UI text
+  (`displaySequence` → `S → ⇧B`). Content script, recorder, and overlay all
+  use it.
+- `src/utilities/hintsData.ts` + `src/utilities/hintsOverlay.ts` — the
+  in-game hotkey hints popup ("Show Hotkey Hints" action, default F1).
+  `hintsData` groups enabled bindings per `hotkeySections` (pure/testable);
+  `hintsOverlay` is a vanilla-DOM singleton (`#dbr-hints-overlay`, styled by
+  `src/styles/hints-overlay.css`) with no focusable elements. The matcher's
+  `pendingPrefix()`/`continuations()` drive live narrowing while a sequence
+  is pending.
 - `src/utilities/sequenceMatcher.ts` — pure trie-based matcher for key
   sequences. The content script feeds it keys; `fire` runs actions,
   `prefix` waits (800ms inter-key timeout), `nomatch` lets the key fall
