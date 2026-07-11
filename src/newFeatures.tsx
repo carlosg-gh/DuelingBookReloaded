@@ -13,22 +13,21 @@ export const NewFeatures = () => {
   ];
 
   return (
-    <div className="bg-white w-1/4 container mx-auto flex-col flex h-auto p-4 items-center rounded mt-6">
+    <div className="bg-white w-full max-w-xl container mx-auto flex-col flex h-auto p-6 items-center rounded mt-6">
       <div className="bg-gray-700 rounded flex w-full justify-center items-center text-white px-4 py-2 my-4">
         <img src={dbr_logo} />
         <h1 className="text-2xl">What's New</h1>
       </div>
       <p>
-        Thank you for using DuelingBookReloaded, here are the updates for
-        0.3:{" "}
+        Thank you for using DuelingBookReloaded, here are the updates for 0.3:{" "}
       </p>
-      <div className="my-6">
+      <ul className="my-6 list-disc pl-6 space-y-2 self-start">
         {features.map((feature, index) => (
           <li key={index} className="text-gray-600">
             {feature}
           </li>
         ))}
-      </div>
+      </ul>
     </div>
   );
 };

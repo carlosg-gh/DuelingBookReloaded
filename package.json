@@ -1,6 +1,6 @@
 {
   "name": "duelingbookreloaded",
-  "version": "0.3.1",
+  "version": "0.3.2",
   "description": "A Chrome extension to bring QOL additions to DuelingBook.com",
   "main": "index.js",
   "scripts": {

@@ -32,10 +32,19 @@ export async function saveHotkeysConfig(hotkeys: HotkeyEntry[]): Promise<void> {
       chrome.tabs.query({}, (tabs) => {
         for (const tab of tabs) {
           if (tab.id !== undefined) {
-            chrome.tabs.sendMessage(tab.id, {
-              type: "HOTKEYS_CHANGED",
-              payload: hotkeys,
-            });
+            chrome.tabs.sendMessage(
+              tab.id,
+              {
+                type: "HOTKEYS_CHANGED",
+                payload: hotkeys,
+              },
+              () => {
+                // only DuelingBook tabs have a receiver; reading lastError
+                // swallows the "Receiving end does not exist" rejection
+                // for every other tab
+                void chrome.runtime.lastError;
+              },
+            );
           }
         }
       });

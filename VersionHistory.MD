@@ -1,5 +1,12 @@
 # Project Extension Version History
 
+## Version 0.3.2 (2026-07-11)
+
+### Bug Fixes
+- Saving hotkeys no longer floods the settings-page console with "Receiving end does not exist" errors (the change broadcast now ignores tabs without the content script).
+- Fixed the What's New page rendering its bullet list without list styling in a too-narrow container.
+- Removed leftover debug logging from the settings page.
+
 ## Version 0.3.1 (2026-07-11)
 
 ### Project Changes
