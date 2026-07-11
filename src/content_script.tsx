@@ -175,7 +175,8 @@ window.onload = async function () {
       removeDarkMode();
       setHotkeys([]);
     } else {
-      if (options.disableHotkeys) {
+      // options is undefined on a fresh install (nothing stored yet)
+      if (options?.disableHotkeys) {
         setHotkeys([]);
       } else {
         fetchHotKeyHashMap();
