@@ -7,6 +7,8 @@ import {
 import { autoConnect, skipIntro } from "./utilities/optionsUtility";
 import { loadHotkeysConfig, HotkeyEntry } from "./utilities/configUtility";
 import { SequenceMatcher } from "./utilities/sequenceMatcher";
+import { normalizeKeyEvent, parseToken } from "./utilities/keyNormalization";
+import * as hintsOverlay from "./utilities/hintsOverlay";
 
 let view: HTMLElement | null;
 let closeViewButton: HTMLElement | null;
@@ -143,6 +145,7 @@ window.onload = async function () {
     "Sub LP": () => subLP(),
     "Add LP": () => addLP(),
     Target: () => playCard("Target"),
+    "Show Hotkey Hints": () => hintsOverlay.toggle(),
   };
 
   let hotkeyHashMap: HotkeyEntry[] = [];
@@ -153,6 +156,7 @@ window.onload = async function () {
     hotkeyHashMap = entries;
     matcher = new SequenceMatcher(entries);
     window.clearTimeout(sequenceTimer);
+    hintsOverlay.setEntries(entries);
   }
 
   setHotkeys(await loadHotkeysConfig());
@@ -163,6 +167,7 @@ window.onload = async function () {
   }
 
   injectStylesheet("dark-mode.css");
+  injectStylesheet("hints-overlay.css");
 
   chrome.storage.sync.get("options", (result) => {
     options = result.options as OptionsTypes;
@@ -366,7 +371,8 @@ window.onload = async function () {
 
   function handleKeyDown(e: KeyboardEvent) {
     if (!e.isTrusted || e.repeat || e.ctrlKey || e.metaKey || e.altKey) return;
-    const key = e.key.toLowerCase();
+    const key = normalizeKeyEvent(e);
+    if (key === null) return; // a modifier keydown itself (e.g. Shift)
 
     if (typingIntent) {
       // The user is deliberately typing (chat message, LP amount): never
@@ -382,10 +388,22 @@ window.onload = async function () {
       return;
     }
 
+    // Escape closes the hints overlay before anything else — it must not
+    // also fire the "Close View Menu" binding.
+    if (key === "escape" && hintsOverlay.isOpen()) {
+      e.preventDefault();
+      e.stopImmediatePropagation();
+      hintsOverlay.hide();
+      matcher.reset();
+      window.clearTimeout(sequenceTimer);
+      return;
+    }
+
     const result = matcher.step(key);
     window.clearTimeout(sequenceTimer);
 
     if (result.type === "nomatch") {
+      hintsOverlay.onReset();
       // Unbound key: let DuelingBook have it. If the page responds by
       // focusing the chat input (its type-to-chat feature), the user is now
       // typing a message — stop treating keys as hotkeys.
@@ -403,13 +421,15 @@ window.onload = async function () {
     if (isTextField(active)) (active as HTMLElement).blur();
 
     if (result.type === "prefix") {
-      sequenceTimer = window.setTimeout(
-        () => matcher.reset(),
-        SEQUENCE_TIMEOUT_MS,
-      );
+      hintsOverlay.onPrefix(matcher.pendingPrefix(), matcher.continuations());
+      sequenceTimer = window.setTimeout(() => {
+        matcher.reset();
+        hintsOverlay.onReset();
+      }, SEQUENCE_TIMEOUT_MS);
       return;
     }
 
+    hintsOverlay.onReset();
     for (const action of result.actions) {
       if (action in actionFunctionMap) {
         actionFunctionMap[action]();
@@ -421,10 +441,14 @@ window.onload = async function () {
 
   function handleKeyUp(e: KeyboardEvent) {
     if (!e.isTrusted || typingIntent) return;
-    const key = e.key.toLowerCase();
+    const token = normalizeKeyEvent(e);
+    if (token === null) return;
+    // compare base keys so releasing Shift before the letter still releases
     const isThumbsUpKey = hotkeyHashMap.some(
       (entry) =>
-        !entry.disabled && entry.action === "Thumbs Up" && entry.hotkey === key,
+        !entry.disabled &&
+        entry.action === "Thumbs Up" &&
+        parseToken(entry.hotkey).key === parseToken(token).key,
     );
     if (isThumbsUpKey) thumbsUpRelease();
   }

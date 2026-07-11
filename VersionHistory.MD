@@ -1,5 +1,23 @@
 # Project Extension Version History
 
+## Version 0.4.0 (2026-07-11)
+
+### New Features
+- **Shift-modifier hotkeys**: every step of a binding can require Shift, e.g. `S → B` for Banish and `S → ⇧B` for Banish FD. Recorded per key in the settings editor (shown as ⇧B). Letters and digits only; Ctrl/Alt combos remain reserved for the browser.
+- **Hotkey hints overlay**: press F1 (rebindable "Show Hotkey Hints" action) to see all enabled hotkeys grouped by section. While a sequence is pending the overlay narrows to the possible continuations — and a small corner hint shows them even when the overlay is closed. Escape or F1 closes it.
+- Updated the extension icon with a golden "R".
+
+### Bug Fixes
+- Thumbs Up now releases correctly when Shift is let go before the key.
+- Hotkey actions added in new versions now appear automatically for existing installs.
+
+## Version 0.3.2 (2026-07-11)
+
+### Bug Fixes
+- Saving hotkeys no longer floods the settings-page console with "Receiving end does not exist" errors (the change broadcast now ignores tabs without the content script).
+- Fixed the What's New page rendering its bullet list without list styling in a too-narrow container.
+- Removed leftover debug logging from the settings page.
+
 ## Version 0.3.1 (2026-07-11)
 
 ### Project Changes

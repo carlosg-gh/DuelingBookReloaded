@@ -1,3 +1,6 @@
+// Base keys assignable as hotkeys. Shift variants ("shift+b") are layered
+// on top by keyNormalization, not listed here. f1 is the only function key
+// (the rest keep their browser meaning).
 export const validHotkeys = [
   "a",
   "b",
@@ -46,4 +49,5 @@ export const validHotkeys = [
   "-",
   "enter",
   "escape",
+  "f1",
 ];

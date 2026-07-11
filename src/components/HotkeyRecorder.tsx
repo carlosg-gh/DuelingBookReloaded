@@ -1,6 +1,10 @@
 import React, { useEffect, useState } from "react";
-import { validHotkeys } from "../data/validHotkeys";
-import { parseSequence, formatSequence } from "../utilities/configUtility";
+import { formatSequence } from "../utilities/configUtility";
+import {
+  normalizeKeyEvent,
+  isAssignableToken,
+  displaySequence,
+} from "../utilities/keyNormalization";
 
 interface HotkeyRecorderProps {
   // stored binding: a single key ("v") or space-separated sequence ("v e")
@@ -11,18 +15,12 @@ interface HotkeyRecorderProps {
 
 const MAX_SEQUENCE_LENGTH = 3;
 
-export function displaySequence(sequence: string): string {
-  const keys = parseSequence(sequence);
-  return keys.length > 0
-    ? keys.map((key) => key.toUpperCase()).join(" → ")
-    : "unset";
-}
-
 /**
  * Press-to-record binding editor. Click Record, type up to three keys
- * (filtered against the assignable-key whitelist), then confirm with the
- * Done button. Confirmation is a button rather than a key because Enter and
- * Escape are themselves assignable.
+ * (filtered against the assignable-key whitelist; Shift is recorded per
+ * key on letters/digits, e.g. ⇧B), then confirm with the Done button.
+ * Confirmation is a button rather than a key because Enter and Escape are
+ * themselves assignable.
  */
 export const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({
   value,
@@ -37,10 +35,10 @@ export const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({
     const capture = (e: KeyboardEvent) => {
       e.preventDefault();
       e.stopPropagation();
-      const key = e.key.toLowerCase();
-      if (!validHotkeys.includes(key)) return;
+      const token = normalizeKeyEvent(e);
+      if (!token || !isAssignableToken(token)) return;
       setKeys((prev) =>
-        prev.length >= MAX_SEQUENCE_LENGTH ? prev : [...prev, key],
+        prev.length >= MAX_SEQUENCE_LENGTH ? prev : [...prev, token],
       );
     };
     window.addEventListener("keydown", capture, true);

@@ -13,12 +13,22 @@ export function formatSequence(keys: string[]): string {
   return keys.join(" ");
 }
 
+// Actions added in newer versions won't exist in configs stored by older
+// installs; append their defaults so upgrades pick them up automatically.
+function mergeWithDefaults(stored: HotkeyEntry[]): HotkeyEntry[] {
+  const known = new Set(stored.map((entry) => entry.action));
+  const missing = getDefaultHotkeys().filter(
+    (entry) => !known.has(entry.action),
+  );
+  return missing.length > 0 ? [...stored, ...missing] : stored;
+}
+
 export async function loadHotkeysConfig(): Promise<HotkeyEntry[]> {
   return new Promise<HotkeyEntry[]>((resolve) => {
     chrome.storage.sync.get({ hotkeysConfig: [] }, (data) => {
       const hotkeys =
         data.hotkeysConfig.length > 0
-          ? data.hotkeysConfig
+          ? mergeWithDefaults(data.hotkeysConfig)
           : getDefaultHotkeys();
       resolve(hotkeys);
     });
@@ -32,10 +42,19 @@ export async function saveHotkeysConfig(hotkeys: HotkeyEntry[]): Promise<void> {
       chrome.tabs.query({}, (tabs) => {
         for (const tab of tabs) {
           if (tab.id !== undefined) {
-            chrome.tabs.sendMessage(tab.id, {
-              type: "HOTKEYS_CHANGED",
-              payload: hotkeys,
-            });
+            chrome.tabs.sendMessage(
+              tab.id,
+              {
+                type: "HOTKEYS_CHANGED",
+                payload: hotkeys,
+              },
+              () => {
+                // only DuelingBook tabs have a receiver; reading lastError
+                // swallows the "Receiving end does not exist" rejection
+                // for every other tab
+                void chrome.runtime.lastError;
+              },
+            );
           }
         }
       });
@@ -88,5 +107,6 @@ export function getDefaultHotkeys(): HotkeyEntry[] {
     { action: "Sub LP", hotkey: "-", disabled: false },
     { action: "Add LP", hotkey: "+", disabled: false },
     { action: "Target", hotkey: "r", disabled: false },
+    { action: "Show Hotkey Hints", hotkey: "f1", disabled: false },
   ];
 }

@@ -113,6 +113,53 @@ describe("SequenceMatcher", () => {
     });
   });
 
+  it("treats shifted and plain keys as distinct bindings", () => {
+    const matcher = new SequenceMatcher([
+      entry("Banish", "b"),
+      entry("Banish FD", "shift+b"),
+    ]);
+    expect(matcher.step("b")).toEqual({ type: "fire", actions: ["Banish"] });
+    expect(matcher.step("shift+b")).toEqual({
+      type: "fire",
+      actions: ["Banish FD"],
+    });
+  });
+
+  it("tracks the pending prefix", () => {
+    const matcher = new SequenceMatcher([
+      entry("Banish FD", "s shift+b"),
+      entry("View Graveyard", "g"),
+    ]);
+    expect(matcher.pendingPrefix()).toEqual([]);
+    matcher.step("s");
+    expect(matcher.pendingPrefix()).toEqual(["s"]);
+    matcher.step("shift+b"); // fire
+    expect(matcher.pendingPrefix()).toEqual([]);
+    matcher.step("s");
+    matcher.step("g"); // dead end retried from root -> fires 'g'
+    expect(matcher.pendingPrefix()).toEqual([]);
+    matcher.step("s");
+    matcher.reset();
+    expect(matcher.pendingPrefix()).toEqual([]);
+  });
+
+  it("lists continuations from the root and after a prefix", () => {
+    const matcher = new SequenceMatcher([
+      entry("View Extra Deck", "v e"),
+      entry("View Graveyard", "g"),
+    ]);
+    expect(matcher.continuations()).toEqual(
+      expect.arrayContaining([
+        { rest: ["v", "e"], actions: ["View Extra Deck"] },
+        { rest: ["g"], actions: ["View Graveyard"] },
+      ]),
+    );
+    matcher.step("v");
+    expect(matcher.continuations()).toEqual([
+      { rest: ["e"], actions: ["View Extra Deck"] },
+    ]);
+  });
+
   it("supports three-key sequences", () => {
     const matcher = new SequenceMatcher([entry("Mill 3", "m i 3")]);
     expect(matcher.step("m")).toEqual({ type: "prefix" });

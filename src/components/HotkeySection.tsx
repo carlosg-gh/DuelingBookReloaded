@@ -7,7 +7,8 @@ import {
 import { findSequenceConflict } from "../utilities/hotkeyValidation";
 import { splitActions } from "../utilities/actionsManipulations";
 import { defaultDisabledActions } from "../data/hotkeySections";
-import { HotkeyRecorder, displaySequence } from "./HotkeyRecorder";
+import { HotkeyRecorder } from "./HotkeyRecorder";
+import { displaySequence } from "../utilities/keyNormalization";
 
 interface HotkeySectionProps {
   title: string;
@@ -43,18 +44,9 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
   };
 
   useEffect(() => {
-    async function loadAndLogHotkeys() {
-      const currentHotkeys = await loadHotkeysConfig();
-      console.log("current hotkeys", currentHotkeys);
-    }
-    loadAndLogHotkeys();
-  }, [resetCounter]);
-
-  useEffect(() => {
     async function initializeSelectedHotkeys() {
       try {
         const currentHotkeys = await loadHotkeysConfig();
-        console.log("current hotkeys", currentHotkeys);
 
         const initialSelectedHotkeys: { [key: string]: string } = {};
         actions.forEach((action) => {
@@ -82,7 +74,6 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
   const toggleDisable = async (action: string) => {
     try {
       const currentHotkeys = await loadHotkeysConfig();
-      console.log("current hotkeys:", currentHotkeys, "action toggled", action);
 
       const actionParts = splitActions(action);
       const actions = [];
@@ -106,7 +97,6 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
         .map((hotkeyItem) => hotkeyItem.action as string);
 
       setDisabledActions(newDisabledActions);
-      console.log(newDisabledActions, newDisabledActions);
       toggleSavedMessage();
     } catch (error) {
       console.error("Error loading or updating hotkeys:", error);
@@ -146,10 +136,6 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
       console.error("Error loading or updating hotkeys:", error);
     }
   };
-
-  useEffect(() => {
-    console.log("selected hotkeys changed", selectedHotkeys);
-  }, [selectedHotkeys]);
 
   type HotkeyEntry = {
     action: string | string[];

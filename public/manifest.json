@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "DuelingBookReloaded",
   "description": "A Chrome extension to bring QOL additions to DuelingBook.com",
-  "version": "0.3.1",
+  "version": "0.4.0",
   "options_ui": {
     "page": "fullOptions.html",
     "open_in_tab": true
@@ -25,7 +25,8 @@
         "js/content_script.js"
       ],
       "css": [
-        "css/dark-mode.css"
+        "css/dark-mode.css",
+        "css/hints-overlay.css"
       ]
     }
   ],
