@@ -1,11 +1,13 @@
-import React, { useEffect, useRef, useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   loadHotkeysConfig,
   saveHotkeysConfig,
+  parseSequence,
 } from "../utilities/configUtility";
-import { validHotkeys } from "../data/validHotkeys";
+import { findSequenceConflict } from "../utilities/hotkeyValidation";
 import { splitActions } from "../utilities/actionsManipulations";
 import { defaultDisabledActions } from "../data/hotkeySections";
+import { HotkeyRecorder, displaySequence } from "./HotkeyRecorder";
 
 interface HotkeySectionProps {
   title: string;
@@ -37,16 +39,6 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
     action: string;
     hotkey: string;
   };
-
-  const selectRefs = useRef<{
-    [key: string]: React.RefObject<HTMLSelectElement>;
-  }>({});
-
-  actions.forEach((action) => {
-    if (!selectRefs.current[action]) {
-      selectRefs.current[action] = React.createRef();
-    }
-  });
 
   useEffect(() => {
     async function loadAndLogHotkeys() {
@@ -120,59 +112,28 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
   const handleHotkeyChange = async (action: string, hotkey: string) => {
     try {
       const currentHotkeys = await loadHotkeysConfig();
+      const editedActions = splitActions(action);
 
-      // check if the new hotkey is already assigned to another action.
-      const alreadyMappedAction = currentHotkeys.find(
-        (hotkeyItem) => hotkeyItem.hotkey === hotkey,
+      // Reject bindings the matcher couldn't distinguish: equal sequences or
+      // one being a prefix of the other (compound rows edit their own group).
+      const conflict = findSequenceConflict(
+        parseSequence(hotkey),
+        editedActions,
+        currentHotkeys,
       );
-      if (alreadyMappedAction && hotkey !== "") {
+      if (conflict) {
         setIsHotkeyInvalid(true);
-        setConflictState({
-          action: `${alreadyMappedAction.action}`,
-          hotkey: `${hotkey}`,
-        });
-
-        console.log(
-          `The hotkey: ${hotkey} is already mapped to the action ${alreadyMappedAction.action}`,
-        );
-
-        setSelectedHotkeys({
-          ...selectedHotkeys,
-          [action]:
-            currentHotkeys.find((hotkey) => hotkey.action === action)?.hotkey ||
-            "",
-        });
-
+        setConflictState({ action: conflict.action, hotkey: conflict.hotkey });
         return;
       }
 
-      const actionParts = splitActions(action);
-      const actions = [];
-
-      if (actionParts.length > 1) {
-        actions.push(...actionParts);
-      } else {
-        actions.push(action);
-      }
-
-      const updatedSelectedHotkeys = { ...selectedHotkeys };
-
       for (const hotkeyItem of currentHotkeys) {
-        if (actions.includes(hotkeyItem.action)) {
-          updatedSelectedHotkeys[hotkeyItem.action] = hotkeyItem.hotkey;
-        }
-
-        for (const hotkeyItem of currentHotkeys) {
-          if (actions.includes(hotkeyItem.action)) {
-            hotkeyItem.hotkey = hotkey;
-          }
+        if (editedActions.includes(hotkeyItem.action)) {
+          hotkeyItem.hotkey = hotkey;
         }
       }
 
-      updatedSelectedHotkeys[action] = hotkey;
-
-      console.log("current hotkeys updated", currentHotkeys);
-      setSelectedHotkeys(updatedSelectedHotkeys);
+      setSelectedHotkeys({ ...selectedHotkeys, [action]: hotkey });
       await saveHotkeysConfig(currentHotkeys);
       toggleSavedMessage();
       setIsHotkeyInvalid(false);
@@ -228,8 +189,8 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
       <div className="flex flex-col gap-2">
         {isHotkeyInvalid && conflictState && (
           <h1 className="text-base font-bold text-red-500">
-            Error! {conflictState.hotkey.toUpperCase()} is already mapped to{" "}
-            {conflictState.action}! Pick another hotkey!
+            Error! That binding overlaps with {conflictState.action} (
+            {displaySequence(conflictState.hotkey)})! Pick another hotkey!
           </h1>
         )}
         {note && <h1 className="opacity-80">({note})</h1>}
@@ -241,21 +202,13 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
             <>
               <div key={index} className={containerClassName}>
                 <h2 className="inline">{action}</h2>
-                <select
-                  ref={selectRefs.current[action]}
-                  value={selectedHotkeys[action]}
-                  onChange={(e) => handleHotkeyChange(action, e.target.value)}
-                  className="border rounded-md text-gray-600"
+                <HotkeyRecorder
+                  value={selectedHotkeys[action] || ""}
                   disabled={
                     isActionDisabled || defaultDisabledActions.includes(action)
                   }
-                >
-                  {validHotkeys.map((key) => (
-                    <option key={key} value={key}>
-                      {key}
-                    </option>
-                  ))}
-                </select>
+                  onChange={(sequence) => handleHotkeyChange(action, sequence)}
+                />
                 {!defaultDisabledActions.includes(action) && (
                   <div className="flex items-center">
                     <label className="mx-2" htmlFor={`${action} checkbox`}>
