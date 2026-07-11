@@ -10,15 +10,15 @@ export function injectStylesheet(filename: string) {
 export function applyDarkMode() {
   const duelOsViewports = document.querySelectorAll("#duel .os_viewport");
   const textInputProxies = document.querySelectorAll(".textinput.proxy");
-  const watchers = document.getElementById("watchers") as HTMLElement;
+  const watchers = document.getElementById("watchers");
   const textInputElements = document.querySelectorAll('input[type="text"]');
-  const previewText = document.getElementById("preview_txt") as HTMLElement;
+  const previewText = document.getElementById("preview_txt");
 
   duelOsViewports.forEach((node) => node.classList.add("dark-mode"));
   textInputProxies.forEach((node) => node.classList.add("dark-mode"));
-  watchers.classList.add("dark-mode");
+  watchers?.classList.add("dark-mode");
   textInputElements.forEach((node) => node.classList.add("dark-mode"));
-  previewText.classList.add("dark-mode");
+  previewText?.classList.add("dark-mode");
 
   const onlineUsersOsViewports = document.querySelectorAll(
     "#chats .os_viewport",
@@ -34,15 +34,15 @@ export function applyDarkMode() {
 export function removeDarkMode() {
   const duelOsViewports = document.querySelectorAll("#duel .os_viewport");
   const textInputProxies = document.querySelectorAll(".textinput.proxy");
-  const watchers = document.getElementById("watchers") as HTMLElement;
+  const watchers = document.getElementById("watchers");
   const textInputElements = document.querySelectorAll('input[type="text"]');
-  const previewText = document.getElementById("preview_txt") as HTMLElement;
+  const previewText = document.getElementById("preview_txt");
 
   duelOsViewports.forEach((node) => node.classList.remove("dark-mode"));
   textInputProxies.forEach((node) => node.classList.remove("dark-mode"));
-  watchers.classList.remove("dark-mode");
+  watchers?.classList.remove("dark-mode");
   textInputElements.forEach((node) => node.classList.remove("dark-mode"));
-  previewText.classList.remove("dark-mode");
+  previewText?.classList.remove("dark-mode");
 
   const onlineUsersOsViewports = document.querySelectorAll(
     "#chats .os_viewport",
