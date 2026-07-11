@@ -83,10 +83,10 @@ const Popup = () => {
       <div className="flex justify-between items-center gap-6">
         <div className="flex items-center">
           <div className="w-12">
-            <img src={logo} alt="DBE Logo" />
+            <img src={logo} alt="DBR Logo" />
           </div>
           <h2 className="font-normal text-xl">
-            DuelingBook<span className="font-bold">Enhanced</span>
+            DuelingBook<span className="font-bold">Reloaded</span>
           </h2>
         </div>
         <button
@@ -122,7 +122,7 @@ const Popup = () => {
         <div id="button-container" className="flex justify-around w-full">
           <Button
             buttonText="Bugs & Feedback"
-            buttonUrl="https://forms.gle/yLW8pasvEr2rshSQ9"
+            buttonUrl="https://github.com/carlosg-gh/DuelingBookReloaded/issues"
           />
           <Button
             buttonText={"Open DB"}

@@ -9,9 +9,7 @@ import {
 import ReactDOM from "react-dom";
 import CustomizeHotkeys from "./CustomizeHotkeys";
 import KnownIssues from "./KnownIssues";
-import ComingSoon from "./components/ComingSoon";
-import JoinDiscord from "./components/JoinDiscord";
-import Footer from "./components/Footer";
+import Attribution from "./components/Attribution";
 
 export const Options = () => {
   const containerRef = useRef<HTMLDivElement | null>(null);
@@ -78,7 +76,7 @@ export const Options = () => {
           <>
             <h1 className="text-3xl font-bold">General</h1>
             <p className="text-gray-600 mt-2">
-              Determine how DuelingBookEnhanced can improve your experience
+              Determine how DuelingBookReloaded can improve your experience
             </p>
             <hr className="border-gray-300 mb-4" />
             <div className="flex flex-col gap-4">
@@ -111,11 +109,11 @@ export const Options = () => {
             <div className="flex justify-evenly items-center">
               <div className="flex items-center">
                 <span className="mr-2">
-                  Noticed a bug or want to request a feature? Let us know!
+                  Noticed a bug or want to request a feature? Open an issue!
                 </span>
                 <Button
                   buttonText="Bugs & Feedback"
-                  buttonUrl="https://forms.gle/yLW8pasvEr2rshSQ9"
+                  buttonUrl="https://github.com/carlosg-gh/DuelingBookReloaded/issues"
                 />
               </div>
               <div className="flex items-center">
@@ -130,8 +128,6 @@ export const Options = () => {
         );
       case "Customize Hotkeys":
         return <CustomizeHotkeys toggleSavedMessage={toggleSavedMessage} />;
-      case "Advanced":
-        return <ComingSoon />;
       case "Help":
         return <KnownIssues />;
       default:
@@ -186,10 +182,10 @@ export const Options = () => {
           ref={containerRef}
           className="flex items-center mb-4 bg-gray-700 justify-center p-2"
         >
-          <img src={logo} alt="DBE Logo" className="w-12 h-12" />
+          <img src={logo} alt="DBR Logo" className="w-12 h-12" />
           <h2 className="text-xl font-bold text-white">
             {isSmall ? "DB" : "DuelingBook"}
-            <span className="text-gray-400">{isSmall ? "E" : "Enhanced"}</span>
+            <span className="text-gray-400">{isSmall ? "R" : "Reloaded"}</span>
           </h2>
         </div>
         <p className="text-xl font-semibold text-center">SETTINGS</p>
@@ -208,12 +204,6 @@ export const Options = () => {
           </button>
           <button
             className="bg-gray-700 hover:bg-gray-500 w-full py-2 mb-2"
-            onClick={() => setCurrentSection("Advanced")}
-          >
-            Advanced
-          </button>
-          <button
-            className="bg-gray-700 hover:bg-gray-500 w-full py-2 mb-2"
             onClick={() => setCurrentSection("Help")}
           >
             Known Issues
@@ -221,7 +211,6 @@ export const Options = () => {
         </nav>
       </div>
       <div className="flex-grow p-4 pt-0 rounded-lg">
-        <JoinDiscord />
         <main className="relative">
           {renderMainContent()}
           {isSavedVisible && (
@@ -232,7 +221,7 @@ export const Options = () => {
             </div>
           )}
         </main>
-        <Footer />
+        <Attribution />
       </div>
     </div>
   );

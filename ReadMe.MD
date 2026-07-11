@@ -1,36 +1,37 @@
+# DuelingBookReloaded
 
-![Logo](https://i.imgur.com/Z7pklez.png)
+## Fork acknowledgement
+
+DuelingBookReloaded is a fork of
+[DuelingBookEnhanced](https://github.com/alexjraymond/DuelingBookEnhanced) by
+[alexjraymond](https://github.com/alexjraymond). All credit for the original
+extension goes to Alex & Joseph — this fork exists to keep the project alive,
+fix outstanding issues, and add new features.
 
 ## Overview
 
-Duelists - Are you tired of clicking through all your actions on [DuelingBook](https://www.duelingbook.com/html5)?
+Duelists — are you tired of clicking through all your actions on [DuelingBook](https://www.duelingbook.com/html5)?
 
-Dueling Book Enhanced is a collection of features designed to enhance your experience on DuelingBook. It includes a TypeScript content script and a React popup, providing various improvements and customization options.
-
-![Demo](https://github.com/alexjraymond/DuelingBookEnhanced/blob/main/src/assets/images/demo-medium.gif?raw=true)
+DuelingBookReloaded is a collection of quality-of-life features for DuelingBook: fully customizable hotkeys (including multi-key sequences), dark mode, intro skipping, and auto-connect. It's a Chrome extension built with a TypeScript content script and a React popup/options UI.
 
 ## Features
 
-1. **Fully Customizable Hotkeys**: Use hotkeys for immediate actions. Individual hotkeys may also be disabled. Default hotkeys below:
+1. **Fully Customizable Hotkeys**: Trigger actions with a single key or a multi-key sequence (e.g. bind `V → E` to View Extra Deck). Rebind anything with the press-to-record editor in the settings page; individual hotkeys can also be disabled. Default hotkeys below:
 
 ---
 | Feature | Default Hotkey | Description |
 | ------- | -------------- | ----------- |
-| Close View Menu | Escape | Closes the view menu | 
-| View Graveyard | G | Toggles the display of your graveyard | 
+| Close View Menu | Escape | Closes the view menu |
+| View Graveyard | G | Toggles the display of your graveyard |
 | View Main Deck | V | Toggles the display of your main deck |
 | View Extra Deck | E | Toggles the display of your extra deck |
+| View Banish | , | Toggles the display of your banished cards |
 | Think | T | Presses the thinking button and sends a message in chat saying that you're thinking |
-| Thumbs Up | F | Presses the thumbs up button | 
+| Thumbs Up | F | Presses the thumbs up button |
 | Toggle Chat Box | Enter | Start or finish typing in the chat box with a single keypress |
-| Mill 1 | 1 | Send 1 card from the top of your deck to the graveyard | 
-| Mill 2 | 2 | Send 1 card from the top of your deck to the graveyard | 
-| Mill 3 | 3 | Send 1 card from the top of your deck to the graveyard | 
-| Mill 4 | 4 | Send 1 card from the top of your deck to the graveyard | 
-| Mill 5 | 5 | Send 1 card from the top of your deck to the graveyard | 
-| Mill 6 | 6 | Send 1 card from the top of your deck to the graveyard | 
-| Add LP | + | Focuses the LP textbox. Just type the number to add to your LP and then push enter | 
-| Sub LP | - | Focuses the LP textbox. Just type the number to subtract from your LP and then push enter | 
+| Mill 1–6 | 1–6 | Send that many cards from the top of your deck to the graveyard |
+| Add LP | + | Focuses the LP textbox. Just type the number to add to your LP and then push enter |
+| Sub LP | - | Focuses the LP textbox. Just type the number to subtract from your LP and then push enter |
 
 ---
 
@@ -38,76 +39,57 @@ Dueling Book Enhanced is a collection of features designed to enhance your exper
 ---
 | **Feature** | **Default Hotkey** | **Description** |
 | ------- | -------------- | ----------- |
-| Activate | A | Activates a card |
-| To S/T | A | Places a card in the S/T Zone |
+| Activate / To S/T | A | Activates a card, or places it in the S/T zone |
 | Banish | W | Banishes a card |
-| Banish | B | Banishes a card face down|
+| Banish FD | B | Banishes a card face down |
+| Banish T. | M | Banishes the top card of your deck (no hover needed) |
 | Declare | D | Declares a card |
 | Normal Summon | N | Normal summon a card in attack position |
-| S.Summon ATK / SS ATK | S | Special summon a card in attack position |
-| Set | J | Sets a card | 
+| S. Summon ATK / SS ATK | S | Special summon a card in attack position |
+| S. Summon DEF / SS DEF | X | Special summon a card in defense position |
+| Overlay | O | Overlays a card |
+| OL ATK / OL DEF | I / P | Overlay summon in attack / defense position |
+| Set | J | Sets a card |
+| Target | R | Targets a card |
 | To Bottom of Deck / To B. Deck | Z | Places a card to the bottom of your deck |
-| To Graveyard / To Grave | Q | Sends a card to the graveyard | 
-| To Hand | H | Sends a card to your hand | 
+| To Graveyard / To Grave / Detach | Q | Sends a card to the graveyard |
+| To Hand / To Extra Deck | H | Sends a card to your hand or extra deck |
+| To Extra Deck FU | U | Sends a card to your extra deck face up |
 
 ---
 
 2. **Dark Mode**: Apply a dark mode.
-
-![DarkmodeAndSettings](https://github.com/alexjraymond/DuelingBookEnhanced/blob/main/src/assets/images/nightmode-and-settings.gif?raw=true)
-
 3. **Skip Intro**: Automatically skip the intro movie.
 4. **AutoConnect**: Automatically connect to the main menu or last screen if you're already logged in.
 
-![SkipAndConnect](https://github.com/alexjraymond/DuelingBookEnhanced/blob/main/src/assets/images/skip-and-connect.gif?raw=true)
+## Installation
 
-## Usage and Installation
+1. Grab the latest `DuelingBookReloaded-v*.zip` from the [Releases page](https://github.com/carlosg-gh/DuelingBookReloaded/releases) and unzip it — or clone this repo and run `npm install && npm run build` to produce the `dist/` folder yourself.
 
-###  Installation
+2. Go to `chrome://extensions`, enable **Developer mode**, and click **Load unpacked**.
 
-1. Download and unzip the `dist.zip` file. (Currently given directly to beta testers. Google Extensions Page currently pending approval)
-
-2. Enable developer mode and go to the Google Chrome Manage Extensions page and click `Load Unpacked`
-
-3. Select the `dist` folder
+3. Select the unzipped folder (or `dist/`).
 
 4. Visit [DuelingBook](https://www.duelingbook.com/html5) and have fun!
 
-5. Check the default settings for the hotkeys and features on this page above or in the help section of the extensions options page when installed.
-
-### Popup
-
-To use the popup:
+## Usage
 
 1. **Extension Icon**: Click the extension icon in your browser to open the popup. (Consider pinning it to your frequently used extensions! <3)
 
-2. **General Settings**: Customize your experience by enabling/disabling general options here.
+2. **General Settings**: Enable/disable the general options from the popup.
 
-3. **Finding Full Settings**: Click the extensions options menu either by right-clicking on the extension and clicking `options` or left-clicking the extension and clicking the gear icon.
+3. **Full Settings**: Open the options page via the gear icon in the popup, or by right-clicking the extension and choosing `Options`. Customize hotkeys (single keys or sequences) in the **Customize Hotkeys** section.
 
-4. **Customizing Full Settings**:  Edit any options in any of the sections. Note: Not all options may be currently accessible and are labeled `Coming Soon`.
-
-## Installation
-
-While we are waiting on the Google Chrome Store to accept our latest development build, feel free to join our discord (https://discord.gg/vxN6HvSwPJ) to get the latest beta access.
-
+4. **Feedback**: Found a bug or want a feature? [Open an issue](https://github.com/carlosg-gh/DuelingBookReloaded/issues).
 
 ## Compatibility
 
-The content script is designed for DuelingBook using Google Chrome. Future versions will allow compatibility with both Safari and Firefox.
+The content script is designed for DuelingBook using Google Chrome (Manifest V3).
 
 ## License
 
-Dueling Book Enhanced is under the [MIT License](LICENSE.md).
+DuelingBookReloaded is under the [MIT License](LICENSE).
 
 ## Disclaimer
 
-Use Dueling Book Enhanced responsibly and respect the rights of Yu-Gi-Oh! owned by its respective copyright holders, as well as [DuelingBook](https://www.duelingbook.com/html5)'s terms of use. The author is not responsible for the misuse or unauthorized use of these scripts.
-
-## Badges
-
-Add badges from somewhere like: [shields.io](https://shields.io/)
-
-[![MIT License](https://img.shields.io/badge/License-MIT-green.svg)](https://choosealicense.com/licenses/mit/)
-[![GPLv3 License](https://img.shields.io/badge/License-GPL%20v3-yellow.svg)](https://opensource.org/licenses/)
-[![AGPL License](https://img.shields.io/badge/license-AGPL-blue.svg)](http://www.gnu.org/licenses/agpl-3.0)
+Use DuelingBookReloaded responsibly and respect the rights of Yu-Gi-Oh! owned by its respective copyright holders, as well as [DuelingBook](https://www.duelingbook.com/html5)'s terms of use. The authors are not responsible for the misuse or unauthorized use of these scripts.

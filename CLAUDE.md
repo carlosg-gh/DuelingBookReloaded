@@ -1,4 +1,4 @@
-# DuelingBookEnhanced
+# DuelingBookReloaded
 
 A Chrome extension (Manifest V3) adding quality-of-life features to
 [duelingbook.com](https://www.duelingbook.com): configurable hotkeys (single

@@ -33,13 +33,13 @@ jobs:
       - name: Package extension
         run: |
           cd dist
-          zip -r "../DuelingBookEnhanced-v${{ steps.version.outputs.version }}.zip" .
+          zip -r "../DuelingBookReloaded-v${{ steps.version.outputs.version }}.zip" .
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: DuelingBookEnhanced-v${{ steps.version.outputs.version }}
-          path: DuelingBookEnhanced-v${{ steps.version.outputs.version }}.zip
+          name: DuelingBookReloaded-v${{ steps.version.outputs.version }}
+          path: DuelingBookReloaded-v${{ steps.version.outputs.version }}.zip
 
       - name: Check if release exists for this version
         id: release_check
@@ -59,4 +59,4 @@ jobs:
           tag_name: v${{ steps.version.outputs.version }}
           name: v${{ steps.version.outputs.version }}
           generate_release_notes: true
-          files: DuelingBookEnhanced-v${{ steps.version.outputs.version }}.zip
+          files: DuelingBookReloaded-v${{ steps.version.outputs.version }}.zip

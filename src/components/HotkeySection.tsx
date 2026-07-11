@@ -14,7 +14,9 @@ interface HotkeySectionProps {
   actions: string[];
   note: string | null;
   selectedHotkeys: { [key: string]: string };
-  setSelectedHotkeys: (hotkeys: { [key: string]: string }) => void;
+  setSelectedHotkeys: React.Dispatch<
+    React.SetStateAction<{ [key: string]: string }>
+  >;
   resetCounter: number;
   toggleSavedMessage: () => void;
 }
@@ -60,7 +62,9 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
           initialSelectedHotkeys[action] = hotkey;
         });
 
-        setSelectedHotkeys(initialSelectedHotkeys);
+        // merge: every section shares this state, and they all load
+        // concurrently — replacing would blank out the other sections
+        setSelectedHotkeys((prev) => ({ ...prev, ...initialSelectedHotkeys }));
 
         const newDisabledActions = currentHotkeys
           .filter((hotkeyItem) => hotkeyItem.disabled)
@@ -133,7 +137,7 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
         }
       }
 
-      setSelectedHotkeys({ ...selectedHotkeys, [action]: hotkey });
+      setSelectedHotkeys((prev) => ({ ...prev, [action]: hotkey }));
       await saveHotkeysConfig(currentHotkeys);
       toggleSavedMessage();
       setIsHotkeyInvalid(false);
