@@ -1,5 +1,33 @@
 # Project Extension Version History
 
+## Version 0.3.1 (2026-07-11)
+
+### Project Changes
+- Renamed the project to **DuelingBookReloaded** (a fork of DuelingBookEnhanced by alexjraymond).
+- Added fork attribution to the settings page and README.
+- Removed Discord banners, the donation footer, and the old feedback form; feedback now goes through GitHub issues.
+- Removed the placeholder "Advanced" settings section.
+
+### Bug Fixes
+- Fixed the settings page showing most hotkeys as "unset" on a fresh install.
+
+## Version 0.3.0 (2026-07-11)
+
+### Bug Fixes
+- Hotkeys no longer lose the race against DuelingBook's chat box: keypresses used to auto-focus the chat input, so hotkeys only worked right after clicking outside it. Hotkey presses are now intercepted before the page sees them, while normal chat typing is left untouched.
+- Fixed a crash when reading options on a fresh install.
+- Fixed the "Activate/To S/T" settings row only ever editing "Activate".
+
+### New Features
+- **Multi-key hotkey sequences**: bind combos like `V → E` alongside single keys (800ms window between keys).
+- **Press-to-record hotkey editor** in the settings page, replacing the dropdowns.
+- Smarter conflict detection: a binding is rejected when it equals or is a prefix of another action's binding.
+
+### Under the Hood
+- Updated dependencies and fixed the extension manifest (removed a broken content-script reference and malformed host permissions).
+- Repaired CI (it never ran from its old location) and added an automated build/release pipeline.
+- Added unit tests for the new hotkey engine.
+
 ## Version 0.2.2 (2023-11-17)
 
 ### New Hotkeys

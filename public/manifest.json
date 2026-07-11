@@ -1,8 +1,8 @@
 {
   "manifest_version": 3,
-  "name": "DuelingBookEnhanced",
+  "name": "DuelingBookReloaded",
   "description": "A Chrome extension to bring QOL additions to DuelingBook.com",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "options_ui": {
     "page": "fullOptions.html",
     "open_in_tab": true

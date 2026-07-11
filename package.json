@@ -1,6 +1,6 @@
 {
-  "name": "duelingbookenhanced",
-  "version": "0.3.0",
+  "name": "duelingbookreloaded",
+  "version": "0.3.1",
   "description": "A Chrome extension to bring QOL additions to DuelingBook.com",
   "main": "index.js",
   "scripts": {
@@ -16,7 +16,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": "https://github.com/alexjraymond/DuelingBookEnhanced.git"
+    "url": "https://github.com/carlosg-gh/DuelingBookEnhanced.git"
   },
   "dependencies": {
     "lodash": "^4.17.21",
