@@ -1,6 +1,6 @@
 {
   "name": "duelingbookenhanced",
-  "version": "0.2.2",
+  "version": "0.3.0",
   "description": "A Chrome extension to bring QOL additions to DuelingBook.com",
   "main": "index.js",
   "scripts": {
@@ -9,7 +9,7 @@
     "build": "npx tsc && webpack --config webpack/webpack.prod.js && npm run build:tailwind",
     "build:tailwind": "npx tailwindcss build -i src/styles/tailwind.css -o dist/css/output.css",
     "clean": "rimraf dist",
-    "test": "npx jest",
+    "test": "npx jest --passWithNoTests",
     "style": "prettier --write \"src/**/*.{ts,tsx}\""
   },
   "author": "",
@@ -19,14 +19,13 @@
     "url": "https://github.com/alexjraymond/DuelingBookEnhanced.git"
   },
   "dependencies": {
-    "fs": "^0.0.1-security",
     "lodash": "^4.17.21",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^4.11.0"
   },
   "devDependencies": {
-    "@types/chrome": "0.0.158",
+    "@types/chrome": "^0.0.270",
     "@types/jest": "^29.5.0",
     "@types/lodash": "^4.14.198",
     "@types/react": "^18.0.29",
@@ -34,18 +33,17 @@
     "copy-webpack-plugin": "^9.1.0",
     "css-loader": "^6.8.1",
     "file-loader": "^6.2.0",
-    "glob": "^7.1.6",
     "html-webpack-plugin": "^5.5.3",
     "jest": "^29.5.0",
-    "prettier": "^2.2.1",
-    "rimraf": "^3.0.2 ",
+    "prettier": "^3.3.3",
+    "rimraf": "^3.0.2",
     "style-loader": "^3.3.3",
     "tailwindcss": "^3.3.3",
     "ts-jest": "^29.1.0",
-    "ts-loader": "^8.0.0",
+    "ts-loader": "^9.5.1",
     "typescript": "^5.2.2",
     "webpack": "^5.89.0",
-    "webpack-cli": "^4.0.0",
+    "webpack-cli": "^5.1.4",
     "webpack-dev-server": "^4.15.1",
     "webpack-merge": "^5.0.0"
   }

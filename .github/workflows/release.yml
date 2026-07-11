@@ -1,0 +1,62 @@
+# Builds and packages the extension on every push to main (e.g. a PR merge).
+# The zip is always uploaded as a workflow artifact; when the manifest
+# version changes, a GitHub Release tagged v<version> is published too.
+name: release
+
+on:
+  push:
+    branches: [ main ]
+
+permissions:
+  contents: write
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20.x
+          cache: npm
+
+      - run: npm ci
+
+      - run: npm run build
+
+      - name: Read extension version
+        id: version
+        run: echo "version=$(node -p "require('./public/manifest.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: Package extension
+        run: |
+          cd dist
+          zip -r "../DuelingBookEnhanced-v${{ steps.version.outputs.version }}.zip" .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: DuelingBookEnhanced-v${{ steps.version.outputs.version }}
+          path: DuelingBookEnhanced-v${{ steps.version.outputs.version }}.zip
+
+      - name: Check if release exists for this version
+        id: release_check
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if gh release view "v${{ steps.version.outputs.version }}" --repo "$GITHUB_REPOSITORY" > /dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Publish GitHub Release
+        if: steps.release_check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.version.outputs.version }}
+          name: v${{ steps.version.outputs.version }}
+          generate_release_notes: true
+          files: DuelingBookEnhanced-v${{ steps.version.outputs.version }}.zip
