@@ -21,6 +21,10 @@ export const plannedFeatures = [
     completed: true,
   },
   {
+    feature: "Touchscreen Mode (tap cards for a touch-friendly action fan)",
+    completed: true,
+  },
+  {
     feature: "Themes",
     completed: false,
   },

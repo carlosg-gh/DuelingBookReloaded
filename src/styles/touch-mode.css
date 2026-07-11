@@ -1,0 +1,104 @@
+/*
+ * Touchscreen mode styles. Everything is gated on html.dbr-touch, which the
+ * content script toggles (touchInput.ts) — with the mode off this file is
+ * inert.
+ */
+
+/*
+ * Hide DuelingBook's slim native card menu while the fan replaces it.
+ * opacity (NOT display/visibility): the menu must stay in the DOM with real
+ * layout because the hotkey playCard path and the fan itself click its
+ * buttons, and DuelingBook's own :visible checks must keep passing.
+ */
+html.dbr-touch #card_menu {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* ---- action fan ---- */
+
+#dbr-touch-fan {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483647;
+  display: none;
+  /* the container never eats touches; only its buttons do */
+  pointer-events: none;
+}
+
+#dbr-touch-fan.dbr-fan-visible {
+  display: block;
+}
+
+.dbr-fan-btn {
+  position: fixed;
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  padding: 10px;
+  /* the box is square (touchFanOverlay BUTTON), so this makes a circle */
+  border-radius: 50%;
+  background: rgba(20, 20, 25, 0.95);
+  color: #eee;
+  border: 1px solid rgba(255, 255, 255, 0.35);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.5);
+  font-family: Arial, sans-serif;
+  font-size: 16px;
+  font-weight: bold;
+  line-height: 1.2;
+  text-align: center;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: none;
+  cursor: pointer;
+}
+
+.dbr-fan-btn-txt {
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  overflow-wrap: break-word;
+}
+
+.dbr-fan-btn-active {
+  background: rgba(59, 130, 246, 0.95);
+  border-color: #fff;
+}
+
+.dbr-fan-btn-group {
+  border-color: rgba(59, 130, 246, 0.9);
+  font-weight: bold;
+}
+
+.dbr-fan-btn-back {
+  background: rgba(59, 130, 246, 0.9);
+  font-weight: bold;
+}
+
+/* ---- bigger touch targets ----
+ * These sprites are 25–53px; scale them toward the ~44px touch minimum.
+ * They live inside DuelingBook's transform-scaled board, so scale composes
+ * with the board zoom instead of fighting its absolute positioning.
+ */
+
+html.dbr-touch #think_btn,
+html.dbr-touch #good_btn {
+  transform: scale(1.7);
+  transform-origin: center;
+}
+
+html.dbr-touch #watchers_btn,
+html.dbr-touch #log_btn {
+  transform: scale(1.4);
+  transform-origin: center;
+}
+
+html.dbr-touch #plus_btn,
+html.dbr-touch #minus_btn {
+  transform: scale(1.5);
+  transform-origin: center;
+}
