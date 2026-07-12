@@ -211,6 +211,18 @@ const EXPECTED_DEFAULTS: Record<ContextGroup, Record<string, string>> = {
     Target: "shift+t",
     Attach: "a",
   },
+  replay: {
+    "Play/Pause Replay": "space",
+    "Step Backward": "arrowleft",
+    "Next Play": "arrowright",
+    "Speed Up": "arrowup",
+    "Speed Down": "arrowdown",
+    "Previous Turn": "[",
+    "Next Turn": "]",
+    "Jump to Game 1": "g 1",
+    "Jump to Game 2": "g 2",
+    "Jump to Game 3": "g 3",
+  },
 };
 
 describe("actionCatalog", () => {
@@ -260,20 +272,23 @@ describe("actionCatalog", () => {
         expect(contexts).toEqual([
           entry.pile === "main" ? "mainPile" : "extraPile",
         ]);
+      } else if (entry.kind === "replay") {
+        expect(contexts).toEqual(["replay"]);
       } else {
         // cardMenu: card groups only
         for (const context of contexts) {
           expect(context).not.toBe("global");
           expect(context).not.toBe("mainPile");
           expect(context).not.toBe("extraPile");
+          expect(context).not.toBe("replay");
         }
       }
     }
   });
 
-  it("gives every non-global action a menu label and pile actions a pile", () => {
+  it("gives every menu-clicking action a menu label and pile actions a pile", () => {
     for (const entry of actionCatalog) {
-      if (entry.kind === "global") {
+      if (entry.kind === "global" || entry.kind === "replay") {
         expect(entry.menuLabel).toBeUndefined();
         expect(entry.pile).toBeUndefined();
       } else {

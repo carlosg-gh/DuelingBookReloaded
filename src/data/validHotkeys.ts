@@ -1,6 +1,7 @@
 // Base keys assignable as hotkeys. Shift variants ("shift+b") are layered
 // on top by keyNormalization, not listed here. f1 is the only function key
-// (the rest keep their browser meaning).
+// (the rest keep their browser meaning). Space and the arrow keys were
+// added for the Replay Viewer group but are assignable anywhere.
 export const validHotkeys = [
   "a",
   "b",
@@ -50,4 +51,9 @@ export const validHotkeys = [
   "enter",
   "escape",
   "f1",
+  "space",
+  "arrowleft",
+  "arrowright",
+  "arrowup",
+  "arrowdown",
 ];

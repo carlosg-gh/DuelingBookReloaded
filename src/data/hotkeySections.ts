@@ -35,6 +35,7 @@ const GROUP_NOTES: Partial<Record<ContextGroup, string>> = {
   extraDeckCard: "Note: Cards while viewing your Extra Deck.",
   xyzMaterial: "Note: Materials while viewing an Xyz monster's materials.",
   opponentCard: "Note: Cards in your opponent's graveyard/banished views.",
+  replay: "Note: Only on replay pages, driving the extension's replay controls.",
 };
 
 // One options-page/hints section per context group, in GROUP_ORDER, rows

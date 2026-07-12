@@ -13,6 +13,7 @@ module.exports = {
         newFeatures: path.join(srcDir, 'newFeatures.tsx'),
         background: path.join(srcDir, 'background.ts'),
         content_script: path.join(srcDir, 'content_script.tsx'),
+        replay_main: path.join(srcDir, 'replay_main.ts'),
         index: path.join(srcDir, 'index.tsx')
     },
     output: {
@@ -32,7 +33,9 @@ module.exports = {
                     test: /[\\/]node_modules[\\/]/,
                     enforce: true,
                     chunks(chunk) {
-                        return chunk.name !== 'background';
+                        // background and replay_main are loaded standalone
+                        // (no vendor.js alongside them in the manifest)
+                        return chunk.name !== 'background' && chunk.name !== 'replay_main';
                     }
                 },
             },
@@ -73,6 +76,7 @@ module.exports = {
                 { from: path.join(srcDir, "styles", "hints-overlay.css"), to: "../css" },
                 { from: path.join(srcDir, "styles", "touch-mode.css"), to: "../css" },
                 { from: path.join(srcDir, "styles", "menu-tweaks.css"), to: "../css" },
+                { from: path.join(srcDir, "styles", "replay-controls.css"), to: "../css" },
             ],
             options: {},
         }),

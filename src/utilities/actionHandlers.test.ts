@@ -8,7 +8,7 @@ function stubDeps() {
     clickPileAction: jest.fn(),
     customHandlers: Object.fromEntries(
       actionCatalog
-        .filter((entry) => entry.kind === "global")
+        .filter((entry) => entry.kind === "global" || entry.kind === "replay")
         .map((entry) => [entry.action, jest.fn()]),
     ),
   };

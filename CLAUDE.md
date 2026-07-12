@@ -114,6 +114,47 @@ manifest lives in `public/manifest.json` and is copied into `dist/` verbatim.
   open — otherwise mousing toward a fan button across neighboring cards would
   swap DuelingBook's menu underneath it and a fan click would act on the
   wrong card.
+- Replay controls (`src/replay_main.ts`, a **MAIN-world** content script
+  on `/replay*` only — the replay engine's state is page globals the
+  isolated world can't touch): speed presets (0.5×–4×, `timer.millis` ÷
+  speed + `TweenMax.globalTimeScale`, re-enforced on a poll because DB's
+  `playE`/`fastE` reset the timer and the native buttons hold direct
+  references), step backward / jump-to-any-point via DB's own per-action
+  `GAMESTATES` snapshots + `restoreGamestate` (plus `gotoDuel` and turn
+  bookkeeping, which restore skips) keyed by a self-recorded
+  play→snapshot map, forward seeks through the engine's own
+  `gotoSeconds`/`skipping` path (accelerated: board tweens snapped every
+  10ms — but never DB's watcher/chat panel tweens, whose forced
+  onCompletes crash against half-initialized scrollbars and can jam the
+  queue — plus `setTimeout` delays ≤1.5s clamped to 0 and sound muted for
+  the duration, ≈3× faster; a 5s no-progress watchdog aborts a jammed
+  seek by restoring the nearest snapshot, which clears the queue), and a
+  bottom timeline bar (`#dbr-replay-bar`, hintsOverlay pattern, divs
+  only, `src/styles/replay-controls.css`) with turn/game markers and an
+  event-icon strip (summons/activations/attacks/phases/LP, classified by
+  `eventKind`; hover shows the play's own `log.public_log` line, click
+  jumps there), plus
+  native-looking Prev/Next buttons replacing DB's "Next Play" in its
+  panel slot (DB's visible buttons are `.button.proxy` divs with
+  `pointer-events: none` over invisible real inputs — ours re-enable
+  pointer events in the CSS). Restores are hardened: snapshots can
+  reference cards absent from the live pools (destroyed tokens,
+  sided-out cards after a game boundary) and duel.js's restore both
+  crashes on the null lookup and strands `resetting=true` (killing
+  endAction forever) — a `getDuelCard` wrapper resurrects misses via
+  `newDuelCard` (owner tracked through an `initCards` wrapper, faces from
+  play payloads injected as `entry.data`), snapshot lists are sanitized
+  of transient nulls (field's positional nulls stay), and `initDuel` is
+  try/catch-wrapped with a `resetting` unstick timer as backstops. Pure
+  timeline math lives in
+  `src/utilities/replayTimeline.ts` (tested). Never restore a pre-deal
+  game-1 snapshot — opening hands are dealt by intro *actions*, not
+  plays, so replaying from one crashes duel.js (game 2+ deals are
+  play-driven); `isUsableGamestate` filters those. The isolated world
+  bridges hotkeys (catalog group `replay`, kind `replay`, matched only on
+  `/replay`; its rows are dropped on every other page so space/arrows
+  never get swallowed from type-to-chat) and the `replayControls` option
+  via `window.postMessage` (`dbr: "replay-command"` / `"replay-enable"`).
 - `src/data/validHotkeys.ts` — whitelist of assignable keys.
 - `src/data/hotkeySections.ts` — options-page sections: one per context
   group in `GROUP_ORDER`; the catalog's `section` field only provides

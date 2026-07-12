@@ -18,7 +18,10 @@ export interface HandlerDeps {
 }
 
 export interface HandlerGaps {
-  /** Global actions with no custom handler — their keys would be dead. */
+  /**
+   * Global/replay actions with no custom handler — their keys would be
+   * dead (both kinds have no derivable behavior; they need custom wiring).
+   */
   missingGlobals: string[];
   /** customHandlers keys naming no catalog action — silently ignored. */
   unknownHandlers: string[];
@@ -38,7 +41,9 @@ export function findHandlerGaps(
   return {
     missingGlobals: catalog
       .filter(
-        (entry) => entry.kind === "global" && !customHandlers[entry.action],
+        (entry) =>
+          (entry.kind === "global" || entry.kind === "replay") &&
+          !customHandlers[entry.action],
       )
       .map((entry) => entry.action),
     unknownHandlers: Object.keys(customHandlers).filter(

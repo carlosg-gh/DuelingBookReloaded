@@ -52,16 +52,26 @@ export function normalizeKeyEvent(e: {
     return formatToken({ key: digit[1], shift: e.shiftKey });
   }
 
-  return formatToken({ key, shift: false });
+  // e.key for the space bar is a literal " ", which can't live in a
+  // space-separated sequence string.
+  return formatToken({ key: key === " " ? "space" : key, shift: false });
 }
 
 export function isAssignableToken(token: string): boolean {
   return validHotkeys.includes(parseToken(token).key);
 }
 
+const DISPLAY_ALIASES: Record<string, string> = {
+  space: "Space",
+  arrowleft: "←",
+  arrowright: "→",
+  arrowup: "↑",
+  arrowdown: "↓",
+};
+
 export function displayToken(token: string): string {
   const { key, shift } = parseToken(token);
-  return `${shift ? "⇧" : ""}${key.toUpperCase()}`;
+  return `${shift ? "⇧" : ""}${DISPLAY_ALIASES[key] ?? key.toUpperCase()}`;
 }
 
 export function displaySequence(sequence: string): string {
