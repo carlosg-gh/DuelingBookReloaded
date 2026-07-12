@@ -45,7 +45,8 @@ export const plannedFeatures = [
     completed: false,
   },
   {
-    feature: "Previous Play button For Replays",
-    completed: false,
+    feature:
+      "Replay Controls (timeline, step backward, speed, game jumps, hotkeys)",
+    completed: true,
   },
 ];

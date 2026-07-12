@@ -9,6 +9,8 @@ export interface OptionsTypes {
   autoConnect: boolean;
   isNightMode: boolean;
   touchMode: TouchMode;
+  /** The replay-page controls bar (speed/step/timeline). */
+  replayControls: boolean;
 }
 
 const defaultOptions: OptionsTypes = {
@@ -18,6 +20,7 @@ const defaultOptions: OptionsTypes = {
   autoConnect: false,
   isNightMode: false,
   touchMode: "auto",
+  replayControls: true,
 };
 
 export const getOptionsFromStorage = (

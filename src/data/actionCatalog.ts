@@ -34,7 +34,7 @@ export type ContextTag =
   | "xyzMaterial" // the menu resets to Detach/Banish for materials
   | "opponentCard"; // opponent's graveyard/banished cards
 
-export type ContextGroup = ContextTag | "global";
+export type ContextGroup = ContextTag | "global" | "replay";
 
 export type ActionKind =
   // Clicks a label in whatever #card_menu is already open; no-ops when the
@@ -48,7 +48,10 @@ export type ActionKind =
   // anywhere, so it lives in the Global group.
   | "pileMenu"
   // Unconditional page action (views, LP, chat…) — Global group.
-  | "global";
+  | "global"
+  // Replay-viewer control, forwarded to the MAIN-world replay driver via
+  // postMessage — Replay group, which only matches on /replay pages.
+  | "replay";
 
 export interface Placement {
   context: ContextGroup;
@@ -88,6 +91,7 @@ export const GROUP_ORDER: ContextGroup[] = [
   "extraDeckCard",
   "xyzMaterial",
   "opponentCard",
+  "replay",
 ];
 
 export const GROUP_LABELS: Record<ContextGroup, string> = {
@@ -105,6 +109,7 @@ export const GROUP_LABELS: Record<ContextGroup, string> = {
   extraDeckCard: "Extra Deck Cards (viewing)",
   xyzMaterial: "Xyz Materials",
   opponentCard: "Opponent's GY/Banished Cards",
+  replay: "Replay Viewer",
 };
 
 // Global-section subheads (options page).
@@ -113,6 +118,7 @@ export const MILLS = "Mills";
 export const LP = "LP";
 export const EMOTES = "Emotes/Chat Box";
 export const EXTENSION = "Extension";
+export const REPLAY = "Replay Viewer";
 // Card-group entries keep a section for consistency; it is not rendered.
 const CARD = "Card Actions";
 
@@ -130,6 +136,10 @@ function spread(
 
 const globalPlacement = (defaultHotkey: string): Placement[] => [
   { context: "global", defaultHotkey },
+];
+
+const replayPlacement = (defaultHotkey: string): Placement[] => [
+  { context: "replay", defaultHotkey },
 ];
 
 // Within each placement group, catalog order is fire order when a merged
@@ -745,6 +755,71 @@ export const actionCatalog: CatalogEntry[] = [
     kind: "global",
     placements: globalPlacement("f1"),
     section: EXTENSION,
+  },
+
+  // ── Replay viewer (duelingbook.com/replay) ───────────────────────────
+  // These drive the extension's replay controls (src/replay_main.ts, a
+  // MAIN-world script) and only match on /replay pages, so their keys are
+  // free to differ from every duel group.
+  {
+    action: "Play/Pause Replay",
+    kind: "replay",
+    placements: replayPlacement("space"),
+    section: REPLAY,
+  },
+  {
+    action: "Step Backward",
+    kind: "replay",
+    placements: replayPlacement("arrowleft"),
+    section: REPLAY,
+  },
+  {
+    action: "Next Play",
+    kind: "replay",
+    placements: replayPlacement("arrowright"),
+    section: REPLAY,
+  },
+  {
+    action: "Speed Up",
+    kind: "replay",
+    placements: replayPlacement("arrowup"),
+    section: REPLAY,
+  },
+  {
+    action: "Speed Down",
+    kind: "replay",
+    placements: replayPlacement("arrowdown"),
+    section: REPLAY,
+  },
+  {
+    action: "Previous Turn",
+    kind: "replay",
+    placements: replayPlacement("["),
+    section: REPLAY,
+  },
+  {
+    action: "Next Turn",
+    kind: "replay",
+    placements: replayPlacement("]"),
+    section: REPLAY,
+  },
+  {
+    action: "Jump to Game 1",
+    kind: "replay",
+    placements: replayPlacement("g 1"),
+    section: REPLAY,
+  },
+  {
+    action: "Jump to Game 2",
+    kind: "replay",
+    placements: replayPlacement("g 2"),
+    section: REPLAY,
+  },
+  {
+    action: "Jump to Game 3",
+    kind: "replay",
+    placements: replayPlacement("g 3"),
+    section: REPLAY,
   },
 ];
 

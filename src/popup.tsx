@@ -41,6 +41,7 @@ const Popup = () => {
     autoConnect: false,
     isNightMode: false,
     touchMode: "auto",
+    replayControls: true,
   });
 
   // Load options from storage when the popup is opened
@@ -114,6 +115,14 @@ const Popup = () => {
       choices: touchModeChoices,
       onSelect: (value) =>
         setOptions({ ...options, touchMode: value as TouchMode }),
+    },
+    {
+      type: "checkbox",
+      id: "replayControls",
+      label: "Replay Controls",
+      checked: options.replayControls,
+      onChange: () =>
+        setOptions({ ...options, replayControls: !options.replayControls }),
     },
   ];
 

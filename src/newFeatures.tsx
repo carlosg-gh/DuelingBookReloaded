@@ -4,13 +4,13 @@ import dbr_logo from "../public/dbe_logo_64.png";
 
 export const NewFeatures = () => {
   const features: string[] = [
-    "Context-sensitive hotkeys: bindings now belong to what your mouse is on — the same key can Draw on your deck, Declare on a card, and Detach on an xyz material",
-    "Way more actions: Attack, Flip Summon, To ATK/DEF, Move, Overlay ATK/DEF, Attach, Reveal, Draw, Shuffle, Mill Deck, Resolve Effect and more",
-    "New mnemonic defaults: v+key opens views (v g → Graveyard), t+key sends cards (t h → To Hand, t g → To Graveyard), s a / s d special summons",
-    "Import/Export: back up and share your hotkey config as JSON from the settings page",
-    "Instant action menu: no more waiting for DuelingBook's menu to unroll",
-    "Fixes: hotkeys work right after summoning a card, deck actions can't hit the wrong button, and the settings page got a cleanup",
-    "Your existing bindings migrate automatically — hit Reset Defaults in settings to adopt the new keymap",
+    "Replay controls: watching a replay now gets a full player bar — a timeline you can click to jump anywhere, with turn and game markers",
+    "Event icons on the timeline: summons, effect activations, attacks, phase changes and LP swings, each with a card-name tooltip — click one to jump straight to that play",
+    "Step Backward: rewind a replay one play at a time (new Prev/Next buttons sit right in DuelingBook's panel)",
+    "Playback speed from 0.5× to 4×, and Jump to Game 1/2/3 buttons for multi-game matches",
+    "Replay hotkeys: Space play/pause, ←/→ step, ↑/↓ speed, [ ] previous/next turn, g 1/2/3 game jumps — all customizable in the new Replay Viewer section in settings",
+    "Space and the arrow keys are now assignable to any hotkey",
+    "A Replay Controls toggle in the popup if you prefer DuelingBook's stock viewer",
   ];
 
   return (
@@ -21,7 +21,7 @@ export const NewFeatures = () => {
       </div>
       <p>
         Thank you for using DuelingBookReloaded, here are the updates for
-        0.6:{" "}
+        0.7:{" "}
       </p>
       <ul className="my-6 list-disc pl-6 space-y-2 self-start">
         {features.map((feature, index) => (
