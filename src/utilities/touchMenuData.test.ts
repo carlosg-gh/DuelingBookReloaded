@@ -1,4 +1,8 @@
-import { buildFanModel, resolveTouchActive } from "./touchMenuData";
+import {
+  buildFanModel,
+  isPileMenuLabels,
+  resolveTouchActive,
+} from "./touchMenuData";
 
 describe("buildFanModel", () => {
   it("keeps top-level labels as direct actions", () => {
@@ -129,6 +133,40 @@ describe("buildFanModel", () => {
 
   it("handles an empty menu", () => {
     expect(buildFanModel([])).toEqual([]);
+  });
+});
+
+describe("isPileMenuLabels", () => {
+  it("recognizes the multiplayer main deck menu", () => {
+    expect(
+      isPileMenuLabels("main", [
+        "Show",
+        "View",
+        "Banish FD",
+        "Banish T.",
+        "Mill",
+        "Shuffle",
+        "Draw",
+      ]),
+    ).toBe(true);
+  });
+
+  it("rejects card menus even when labels overlap pile labels", () => {
+    // A hand card's menu can contain "Banish FD" but never Draw+Shuffle.
+    expect(
+      isPileMenuLabels("main", ["Activate", "Set", "Banish", "Banish FD"]),
+    ).toBe(false);
+  });
+
+  it("recognizes the extra deck pile menu (solo and multiplayer)", () => {
+    expect(isPileMenuLabels("extra", ["Show", "View"])).toBe(true);
+    expect(isPileMenuLabels("extra", ["View"])).toBe(true);
+  });
+
+  it("rejects an xyz monster's card menu for the extra pile", () => {
+    // Xyz hosts offer "View" (materials) among battle actions.
+    expect(isPileMenuLabels("extra", ["Attack", "View", "To DEF"])).toBe(false);
+    expect(isPileMenuLabels("extra", [])).toBe(false);
   });
 });
 

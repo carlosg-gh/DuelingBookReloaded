@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { formatSequence } from "../utilities/configUtility";
 import {
   normalizeKeyEvent,
@@ -15,6 +15,12 @@ interface HotkeyRecorderProps {
 
 const MAX_SEQUENCE_LENGTH = 3;
 
+// Only one recorder may capture keys at a time — two live capture
+// listeners would both swallow the same keystrokes. Module-level because
+// recorders are spread across every options section; starting a recording
+// cancels whichever recorder was active before.
+let cancelActiveRecording: (() => void) | null = null;
+
 /**
  * Press-to-record binding editor. Click Record, type up to three keys
  * (filtered against the assignable-key whitelist; Shift is recorded per
@@ -29,6 +35,22 @@ export const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({
 }) => {
   const [recording, setRecording] = useState(false);
   const [keys, setKeys] = useState<string[]>([]);
+
+  // Stable per-instance stop callback (setState functions never change),
+  // so the module-level slot can be compared by identity.
+  const stopRef = useRef<(() => void) | null>(null);
+  if (stopRef.current === null) {
+    stopRef.current = () => {
+      setRecording(false);
+      setKeys([]);
+    };
+  }
+
+  const releaseActiveSlot = () => {
+    if (cancelActiveRecording === stopRef.current) {
+      cancelActiveRecording = null;
+    }
+  };
 
   useEffect(() => {
     if (!recording) return;
@@ -45,17 +67,24 @@ export const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({
     return () => window.removeEventListener("keydown", capture, true);
   }, [recording]);
 
+  // Don't leave a dangling cancel pointer if the row unmounts mid-recording.
+  useEffect(() => releaseActiveSlot, []);
+
   const startRecording = () => {
+    cancelActiveRecording?.();
+    cancelActiveRecording = stopRef.current;
     setKeys([]);
     setRecording(true);
   };
 
   const cancel = () => {
+    releaseActiveSlot();
     setRecording(false);
     setKeys([]);
   };
 
   const confirm = () => {
+    releaseActiveSlot();
     setRecording(false);
     if (keys.length > 0) onChange(formatSequence(keys));
     setKeys([]);
@@ -64,7 +93,7 @@ export const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({
   if (recording) {
     return (
       <div className="flex items-center gap-2">
-        <span className="border border-blue-500 rounded-md px-2 min-w-[5rem] text-center text-blue-600 animate-pulse">
+        <span className="border border-blue-500 rounded-md px-2 w-32 shrink-0 truncate text-center text-blue-600 animate-pulse">
           {keys.length > 0
             ? displaySequence(formatSequence(keys))
             : "press keys…"}
@@ -88,8 +117,12 @@ export const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({
 
   return (
     <div className="flex items-center gap-2">
-      <span className="border rounded-md px-2 min-w-[5rem] text-center text-gray-600">
-        {displaySequence(value)}
+      <span className="border rounded-md px-2 w-32 shrink-0 truncate text-center text-gray-600">
+        {value ? (
+          displaySequence(value)
+        ) : (
+          <span className="italic opacity-60">unbound</span>
+        )}
       </span>
       <button
         onClick={startRecording}
@@ -98,6 +131,15 @@ export const HotkeyRecorder: React.FC<HotkeyRecorderProps> = ({
       >
         Record
       </button>
+      {value && !disabled && (
+        <button
+          onClick={() => onChange("")}
+          className="bg-gray-300 text-gray-700 text-sm rounded px-2 py-0.5 hover:bg-gray-200"
+          title="Remove this binding"
+        >
+          Clear
+        </button>
+      )}
     </div>
   );
 };

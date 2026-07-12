@@ -1,56 +1,56 @@
-export const hotkeySections = [
-  {
-    title: "Deck Actions",
-    actions: [
-      "Close View Menu",
-      "View Extra Deck",
-      "View Graveyard",
-      "View Main Deck",
-      "Banish T.",
-    ],
-    note: "Note: You can also close any of the menu views by pushing the hotkey again.",
-  },
-  {
-    title: "Card Actions",
-    actions: [
-      "Activate/To S/T",
-      "Banish",
-      "Banish FD",
-      "Declare",
-      "Normal Summon",
-      "Overlay",
-      "S. Summon ATK/SS ATK",
-      "S. Summon DEF/SS DEF",
-      "OL ATK",
-      "OL DEF",
-      "Set",
-      "To Bottom of Deck/To B. Deck",
-      "To Graveyard/To Grave/Detach",
-      "To Hand/To Extra Deck",
-      "To Extra Deck FU",
-    ],
-    note: "Note: You must be hovering over a card to use these.",
-  },
-  {
-    title: "Mills",
-    actions: ["Mill 1", "Mill 2", "Mill 3", "Mill 4", "Mill 5", "Mill 6"],
-    note: null,
-  },
-  {
-    title: "LP",
-    actions: ["Add LP", "Sub LP"],
-    note: null,
-  },
-  {
-    title: "Emotes/Chat Box",
-    actions: ["Toggle Chat Box", "Think", "Thumbs Up"],
-    note: null,
-  },
-  {
-    title: "Extension",
-    actions: ["Show Hotkey Hints"],
-    note: "Note: Shows an overlay of all enabled hotkeys. Press again or Escape to close.",
-  },
-];
+import {
+  actionCatalog,
+  GROUP_ORDER,
+  GROUP_LABELS,
+  ContextGroup,
+} from "./actionCatalog";
 
-export const defaultDisabledActions = ["Close View Menu", "Toggle Chat Box"];
+export interface SectionRow {
+  action: string;
+  /** Subhead label — only rendered inside the Global section. */
+  subhead?: string;
+}
+
+export interface HotkeySectionData {
+  context: ContextGroup;
+  title: string;
+  note: string | null;
+  rows: SectionRow[];
+}
+
+const GROUP_NOTES: Partial<Record<ContextGroup, string>> = {
+  global:
+    "Note: These work anywhere. View hotkeys close their view when pressed again.",
+  mainPile: "Note: These act while your mouse is over your deck.",
+  extraPile: "Note: These act while your mouse is over your Extra Deck.",
+  handMonster:
+    "Note: While hovering a monster in your hand. If DuelingBook shows the same menu for a monster and a spell/trap, keep shared actions on the same key in both hand groups.",
+  handST: "Note: While hovering a spell or trap in your hand.",
+  fieldMonsterFaceUp: "Note: While hovering your face-up monster.",
+  fieldMonsterFaceDown: "Note: While hovering your face-down monster.",
+  fieldST: "Note: While hovering your set/face-up spells & traps.",
+  graveCard: "Note: Cards in your graveyard (pile top or the GY view).",
+  banishedCard: "Note: Your banished cards (pile top or the view).",
+  deckViewCard: "Note: Cards while viewing or picking from your deck.",
+  extraDeckCard: "Note: Cards while viewing your Extra Deck.",
+  xyzMaterial: "Note: Materials while viewing an Xyz monster's materials.",
+  opponentCard: "Note: Cards in your opponent's graveyard/banished views.",
+};
+
+// One options-page/hints section per context group, in GROUP_ORDER, rows
+// in catalog order.
+export const hotkeySections: HotkeySectionData[] = GROUP_ORDER.map(
+  (context) => ({
+    context,
+    title: GROUP_LABELS[context],
+    note: GROUP_NOTES[context] ?? null,
+    rows: actionCatalog
+      .filter((entry) =>
+        entry.placements.some((placement) => placement.context === context),
+      )
+      .map((entry) => ({
+        action: entry.action,
+        subhead: context === "global" ? entry.section : undefined,
+      })),
+  }),
+);

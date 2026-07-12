@@ -72,6 +72,7 @@ module.exports = {
                 { from: path.join(srcDir, "styles", "dark-mode.css"), to: "../css" },
                 { from: path.join(srcDir, "styles", "hints-overlay.css"), to: "../css" },
                 { from: path.join(srcDir, "styles", "touch-mode.css"), to: "../css" },
+                { from: path.join(srcDir, "styles", "menu-tweaks.css"), to: "../css" },
             ],
             options: {},
         }),

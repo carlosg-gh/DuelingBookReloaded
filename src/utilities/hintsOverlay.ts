@@ -1,4 +1,4 @@
-import { HotkeyEntry, parseSequence } from "./configUtility";
+import { ContextHotkeyEntry, parseSequence } from "./configUtility";
 import { buildHintGroups, HintGroup } from "./hintsData";
 import { displayToken } from "./keyNormalization";
 import { Continuation } from "./sequenceMatcher";
@@ -159,7 +159,7 @@ function hideTransient(): void {
   transient?.classList.remove("dbr-hints-visible");
 }
 
-export function setEntries(entries: HotkeyEntry[]): void {
+export function setEntries(entries: ContextHotkeyEntry[]): void {
   groups = buildHintGroups(entries);
   activePrefix = [];
   hideTransient();

@@ -4,12 +4,13 @@ import dbr_logo from "../public/dbe_logo_64.png";
 
 export const NewFeatures = () => {
   const features: string[] = [
-    "Hotkey hints: press F1 in a match to see every enabled hotkey; typing a sequence narrows the list to what can follow",
-    "Shift-modifier hotkeys: the same key can do different things with Shift held (e.g. S→B to Banish, S→⇧B to Banish face-down)",
-    "Hotkeys now work reliably: keypresses no longer get swallowed by the chat box, so you never have to click away before using a hotkey",
-    'Multi-key hotkey sequences: bind combos like "v e" (View Extra) alongside single keys',
-    "New press-to-record hotkey editor in the settings page, with smarter conflict detection for sequences",
-    "The extension is now DuelingBookReloaded, a community fork of DuelingBookEnhanced, with a fresh golden-R icon",
+    "Context-sensitive hotkeys: bindings now belong to what your mouse is on — the same key can Draw on your deck, Declare on a card, and Detach on an xyz material",
+    "Way more actions: Attack, Flip Summon, To ATK/DEF, Move, Overlay ATK/DEF, Attach, Reveal, Draw, Shuffle, Mill Deck, Resolve Effect and more",
+    "New mnemonic defaults: v+key opens views (v g → Graveyard), t+key sends cards (t h → To Hand, t g → To Graveyard), s a / s d special summons",
+    "Import/Export: back up and share your hotkey config as JSON from the settings page",
+    "Instant action menu: no more waiting for DuelingBook's menu to unroll",
+    "Fixes: hotkeys work right after summoning a card, deck actions can't hit the wrong button, and the settings page got a cleanup",
+    "Your existing bindings migrate automatically — hit Reset Defaults in settings to adopt the new keymap",
   ];
 
   return (
@@ -20,7 +21,7 @@ export const NewFeatures = () => {
       </div>
       <p>
         Thank you for using DuelingBookReloaded, here are the updates for
-        0.4:{" "}
+        0.6:{" "}
       </p>
       <ul className="my-6 list-disc pl-6 space-y-2 self-start">
         {features.map((feature, index) => (

@@ -21,24 +21,57 @@ Stack: React 18 + TypeScript, webpack 5 (`webpack/webpack.*.js`), Tailwind.
 Webpack entry points are declared in `webpack/webpack.common.js`; the
 manifest lives in `public/manifest.json` and is copied into `dist/` verbatim.
 
+- `src/data/actionCatalog.ts` — **single source of truth** for every
+  bindable action. The binding unit is **(context group, action)**: each
+  entry has `placements` (one per hover-context group it appears in, each
+  with its own default hotkey; `""` = unbound) plus a kind (`cardMenu`
+  clicks a label in the open card menu, `pileHover` clicks in a pile's
+  menu only while the pointer hovers that pile, `pileMenu` opens a pile
+  menu remotely then clicks — Global group, `global` fires
+  unconditionally — Global group) and the exact menu label. The 13 card/
+  pile groups + Global are ordered by `GROUP_ORDER`/`GROUP_LABELS`.
+  Context data derives from DuelingBook's client source — see
+  `docs/duelingbook-internals.md`. Defaults, handlers, options sections,
+  hints, conflict rules, and context detection all derive from this file.
+- `src/utilities/contextDetection.ts` — pure: decides which group(s) a
+  keypress belongs to from a DOM snapshot: pile-menu label signature →
+  pile groups; `#view .title_txt` ("Viewing Graveyard"…) → view-card
+  groups; otherwise a fingerprint intersecting `buildCardLabelIndex()`
+  over the open menu's labels. Returns a candidate LIST — ambiguous menus
+  (hand monster vs trap with all zones full) return several groups and
+  the content script matches against their merged bindings, which is
+  exactly the old click-if-present behavior.
 - `src/content_script.tsx` — injected into duelingbook.com. Owns all in-game
-  behavior: the key listeners, the action→function map
-  (`actionFunctionMap`), and DOM manipulation of DuelingBook's UI (clicking
-  its buttons/menus by id/class).
+  behavior: the context-scoped key matching (see "Key handling"), the
+  derived action→function map (`buildActionFunctionMap(actionCatalog, …)`
+  with custom handlers for `global` actions), and DOM manipulation of
+  DuelingBook's UI (clicking its buttons/menus by id/class, reusing
+  `touchNativeMenu.ts` helpers for card/pile menus).
 - `src/background.ts` — MV3 service worker; only opens the "new features"
   page on install/update.
 - `src/popup.tsx`, `src/fullOptions.tsx` — toolbar popup and options page
   (options page is where hotkeys are customized via `CustomizeHotkeys.tsx` →
   `components/HotkeySection.tsx` → `components/HotkeyRecorder.tsx`).
-- `src/utilities/configUtility.ts` — hotkey persistence. Config is a flat
-  `HotkeyEntry[]` (`{action, hotkey, disabled}`) under `hotkeysConfig` in
-  `chrome.storage.sync`. `hotkey` is a space-separated sequence of tokens;
-  a token is `["shift+"] base` (`"v"`, `"shift+b"`, `"s shift+b"`, `"f1"`).
-  Shift is meaningful only on letters/digits. `loadHotkeysConfig` backfills
-  defaults for actions missing from stored configs (new-version actions
-  appear on upgrade). `saveHotkeysConfig` broadcasts a `HOTKEYS_CHANGED`
-  runtime message that the content script uses to hot-swap bindings without
-  a page reload.
+- `src/utilities/configUtility.ts` — hotkey persistence. Working shape is
+  `ContextHotkeyEntry[]` (`{context, action, hotkey, disabled}`,
+  `src/utilities/hotkeySequence.ts`); `hotkey` is a space-separated token
+  sequence, a token is `["shift+"] base` (`"v"`, `"shift+b"`,
+  `"s shift+b"`, `"f1"`); Shift is meaningful only on letters/digits.
+  Storage is **sparse**: `hotkeysConfigV2` holds only deviations from the
+  catalog defaults (`expandOverrides`/`diffAgainstDefaults` — the full
+  ~140-row config would exceed chrome.storage.sync's 8KB item quota, and
+  sparseness lets improved defaults propagate on upgrade unless the user
+  customized that row; `expandOverrides` also blanks any shipped default
+  that would collide with a user override). Legacy per-action
+  `hotkeysConfig` is migrated best-effort on first load (`migrateV1`:
+  fan out to placements, skip conflicting ones) then removed.
+  `saveHotkeysConfig` broadcasts a `HOTKEYS_CHANGED` message whose
+  payload is the expanded sorted rows. `src/utilities/configTransfer.ts`
+  exports/imports the same overrides shape as versioned JSON
+  (`{format: "dbr-hotkeys", version: 2, overrides}`) — import is
+  forgiving (unknown/malformed/colliding entries dropped with a notice)
+  and consistent with upgrade semantics (imported keys beat shipped
+  defaults).
 - `src/utilities/keyNormalization.ts` — the single place keyboard events
   become tokens (`normalizeKeyEvent`, via `e.code` for letters/digits so
   Shift/CapsLock can't skew them) and tokens become UI text
@@ -46,19 +79,25 @@ manifest lives in `public/manifest.json` and is copied into `dist/` verbatim.
   use it.
 - `src/utilities/hintsData.ts` + `src/utilities/hintsOverlay.ts` — the
   in-game hotkey hints popup ("Show Hotkey Hints" action, default F1).
-  `hintsData` groups enabled bindings per `hotkeySections` (pure/testable);
-  `hintsOverlay` is a vanilla-DOM singleton (`#dbr-hints-overlay`, styled by
-  `src/styles/hints-overlay.css`) with no focusable elements. The matcher's
-  `pendingPrefix()`/`continuations()` drive live narrowing while a sequence
-  is pending.
+  `hintsData` groups enabled bound rows per context group in `GROUP_ORDER`
+  (pure/testable); `hintsOverlay` is a vanilla-DOM singleton
+  (`#dbr-hints-overlay`, styled by `src/styles/hints-overlay.css`) with no
+  focusable elements. The active matcher's
+  `pendingPrefix()`/`continuations()` drive live narrowing while a
+  sequence is pending.
 - `src/utilities/sequenceMatcher.ts` — pure trie-based matcher for key
-  sequences. The content script feeds it keys; `fire` runs actions,
-  `prefix` waits (800ms inter-key timeout), `nomatch` lets the key fall
-  through to the page. Duplicate sequences map to multiple actions on
-  purpose: card-menu actions are context-dependent and `playCard` clicks
-  whichever is present.
-- `src/utilities/hotkeyValidation.ts` — options-page conflict rule: two
-  bindings conflict when one sequence equals or is a prefix of the other.
+  sequences. `fire` runs actions, `prefix` waits (1.5s inter-key
+  timeout), `nomatch` lets the key fall through. Duplicate sequences map
+  to multiple actions — only reachable via merged (ambiguous-context)
+  matchers, where the first present menu label (catalog order) wins.
+- `src/utilities/hotkeyValidation.ts` — group-scoped conflict rules.
+  Hard (blocked): prefix relations within a group, and anything involving
+  the Global group (its actions fire everywhere). Warning (saved, amber
+  note): equal keys between two actions of one non-global group — both
+  fire, handlers click-if-present, and when a menu offers both labels the
+  action earlier in the catalog acts. Across groups anything goes —
+  matching is context-scoped, so `d` is Draw while hovering the deck and
+  Declare on a card, and group A may bind `t` while group B binds `t h`.
 - Touchscreen mode (option `touchMode`: on/off/auto, auto =
   `matchMedia("(pointer: coarse)")`): tapping a duel card or pile opens a
   radial fan of large action buttons that drives DuelingBook's own (CSS-hidden)
@@ -76,7 +115,17 @@ manifest lives in `public/manifest.json` and is copied into `dist/` verbatim.
   swap DuelingBook's menu underneath it and a fan click would act on the
   wrong card.
 - `src/data/validHotkeys.ts` — whitelist of assignable keys.
-- `src/data/hotkeySections.ts` — options-page grouping of actions.
+- `src/data/hotkeySections.ts` — options-page sections: one per context
+  group in `GROUP_ORDER`; the catalog's `section` field only provides
+  subheads inside the Global section.
+- `src/styles/menu-tweaks.css` — always-injected: pins
+  `#card_menu_content { top: 0 !important }` to defeat DuelingBook's
+  ~30ms-per-row menu unroll tween (stylesheet `!important` beats
+  TweenMax's inline styles) and replaces it with an 80ms fade. Hotkeys
+  and context detection read this menu, so it must appear instantly.
+- `docs/duelingbook-internals.md` — how to deobfuscate DuelingBook's
+  `duel.js` (webcrack) and where its menu builders live; read it before
+  touching the catalog's context data.
 
 ## Key handling (why it's shaped this way)
 
@@ -87,8 +136,23 @@ steals focus before the extension sees the key. Keys that match (or start)
 a binding get `preventDefault()` + `stopImmediatePropagation()`. A
 `typingIntent` flag tracks whether the user is deliberately typing (clicked
 an input, toggled the chat box, adjusting LP); while set, nothing is
-intercepted. Unbound keys always fall through so DuelingBook's native
-type-to-chat keeps working.
+intercepted.
+
+Matching is **context-scoped**: `setHotkeys` builds one `SequenceMatcher`
+per group (that group's rows + the Global rows — validation guarantees no
+overlap), a Global-only matcher, and a union matcher. Keydown order:
+1. A pending sequence steps only the **locked matcher** that started it
+   (hints/timeout logic target it; every reset site releases the lock).
+2. Fast path: keys that begin no binding anywhere (`firstTokens`) fall
+   through with zero DOM reads.
+3. Otherwise `ensureCardMenuOpen()` (pointer tracking), build the
+   detection snapshot, `detectContextGroups` → one matcher, or a cached
+   **merged matcher** when candidates tie, or Global-only when nothing is
+   hovered.
+4. On nomatch the **union matcher is a swallow oracle**: a key bound in
+   ANY group is swallowed (and locks swallow-only if it starts a
+   sequence) so bound keys never leak into type-to-chat; only truly
+   unbound keys reach the page.
 
 ## Gotchas
 
@@ -96,13 +160,34 @@ type-to-chat keeps working.
   is `document.querySelectorAll("input.cin_txt")[1]`, card menus are
   `#card_menu_content .card_menu_btn`). If the site updates, these break
   silently.
-- `actionFunctionMap` in `content_script.tsx` and `getDefaultHotkeys()` in
-  `configUtility.ts` must stay in sync — every action string needs both a
-  default binding and a function.
-- Action names may contain `/` (e.g. `"To S/T"`), and the options page also
-  uses `/` to join compound rows (`"Activate/To S/T"`). Always use
-  `splitActions()` (`src/utilities/actionsManipulations.ts`) to split
-  labels; never `label.split("/")`.
+- New actions are added **only** in `src/data/actionCatalog.ts` — defaults,
+  handlers, options rows, hints, conflict rules, and context detection
+  all derive from it. `findHandlerGaps` reports globals missing a handler
+  and handlers naming no catalog action (console.error at startup — never
+  a throw, which would abort `window.onload` and kill every feature). Get
+  a placement's group right or both the conflict checker and the
+  fingerprint detector misbehave (context data comes from DuelingBook's
+  source — `docs/duelingbook-internals.md`). The pinned per-group default
+  table + no-conflict invariant live in `actionCatalog.test.ts`.
+- Context detection fingerprints menus against the catalog's label data —
+  re-audit both together when DuelingBook ships a new `duel.js`.
+- Row order is behavior wherever one key maps to several actions (merged
+  ambiguous-context matchers, warning-level in-group shares): the first
+  action whose label is present acts. `loadHotkeysConfig`,
+  `saveHotkeysConfig`, and the content script's `setHotkeys` all sort
+  into catalog order — don't feed matchers unsorted rows.
+- `hotkey: ""` means unbound (skipped by matcher, hints, and validation).
+  Storage keeps only overrides; `expandOverrides` blanks a shipped
+  default that would collide with a user override — an upgrade must
+  never break or shadow a user's keys.
+- DuelingBook never re-fires `mouseover` when a card moves under a
+  stationary pointer (post-summon tween), and `showMenu` refuses while a
+  card is tweening — so card hotkeys track the pointer (`mousemove`
+  capture) and re-open the menu for the card under it before clicking.
+- The deck pile menu opens on mere hover of `#deck_hidden`, and its DOM
+  order is the *reverse* of `showDeckMenu`'s push order (and differs
+  between solo and multiplayer) — always click pile buttons by label,
+  never by index.
 - Options-page keys captured by `HotkeyRecorder` must be confirmed with the
   Done **button** — Enter and Escape are themselves assignable keys.
 - In touch mode the native `#card_menu` is hidden with `opacity: 0` but MUST
