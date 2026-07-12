@@ -34,6 +34,7 @@ const TOP_LEVEL_LABELS = new Set([
   "Detach",
   "Attach",
   "Resolve Effect",
+  "Choose",
 ]);
 
 const GROUPS: Record<GroupName, string[]> = {
@@ -66,6 +67,7 @@ const GROUPS: Record<GroupName, string[]> = {
     "To Bottom of Deck",
     "To B. Deck",
     "To S/T",
+    "Remove",
   ],
   Position: [
     "To ATK",
@@ -169,6 +171,46 @@ export function buildFanModel(
     item.kind === "group" && item.children.length === 1
       ? { kind: "action", label: item.children[0] }
       : item,
+  );
+}
+
+/** True when the fan tables know this label (top-level or grouped). */
+export function isKnownFanLabel(
+  label: string,
+  context: FanContext = "card",
+): boolean {
+  return context === "pile"
+    ? PILE_TOP_LEVEL.has(label) || PILE_LABEL_TO_GROUP.has(label)
+    : TOP_LEVEL_LABELS.has(label) || CARD_LABEL_TO_GROUP.has(label);
+}
+
+// "Draw" and "Shuffle" are always in the main deck's menu and never in a
+// card's; the extra pile's menu draws from a tiny fixed vocabulary.
+const MAIN_PILE_SIGNATURE = ["Draw", "Shuffle"];
+const EXTRA_PILE_VOCABULARY = new Set([
+  "View",
+  "Show",
+  "Banish random ED Card",
+  "Banish random FD ED card",
+]);
+
+/**
+ * Does this label set look like the given pile's native menu? Used to
+ * verify that a menu which was already open before a synthetic pile hover
+ * actually belongs to the pile — DuelingBook silently refuses to swap
+ * menus while a card is tweening, an overlay is up, or a view is open,
+ * leaving a hovered card's menu in place.
+ */
+export function isPileMenuLabels(
+  pile: "main" | "extra",
+  labels: string[],
+): boolean {
+  if (pile === "main") {
+    return MAIN_PILE_SIGNATURE.every((label) => labels.includes(label));
+  }
+  return (
+    labels.length > 0 &&
+    labels.every((label) => EXTRA_PILE_VOCABULARY.has(label))
   );
 }
 

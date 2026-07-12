@@ -25,15 +25,23 @@ export const plannedFeatures = [
     completed: true,
   },
   {
+    feature: "Context-Sensitive Hotkeys (bindings per hovered card/pile/view)",
+    completed: true,
+  },
+  {
+    feature: "Import/Export User Configs",
+    completed: true,
+  },
+  {
+    feature: "Highlight the Current Hotkey Context in the Hints Overlay",
+    completed: false,
+  },
+  {
     feature: "Themes",
     completed: false,
   },
   {
     feature: "Chain Link Declarations",
-    completed: false,
-  },
-  {
-    feature: "Import/Export User Configs",
     completed: false,
   },
   {

@@ -1,0 +1,22 @@
+/*
+ * Instant action drawer. DuelingBook unrolls the card/pile menu with a
+ * TweenMax animation on #card_menu_content's `top` (~30ms per row, so a
+ * full hand-monster menu takes ~360ms). Hotkeys and context detection key
+ * off this menu, so pin the tween's end state — a stylesheet !important
+ * beats TweenMax's per-frame inline styles — and replace the unroll with
+ * a fast fade. The animation restarts on every open because DuelingBook
+ * re-attaches #card_menu each time.
+ */
+#card_menu_content {
+  top: 0 !important;
+  animation: dbr-menu-fade-in 80ms ease-out;
+}
+
+@keyframes dbr-menu-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}

@@ -1,61 +1,50 @@
 import { buildHintGroups } from "./hintsData";
-import { HotkeyEntry } from "./configUtility";
+import { ContextHotkeyEntry } from "./hotkeySequence";
+import { ContextGroup } from "../data/actionCatalog";
 
-function entry(action: string, hotkey: string, disabled = false): HotkeyEntry {
-  return { action, hotkey, disabled };
+function row(
+  context: ContextGroup,
+  action: string,
+  hotkey: string,
+  disabled = false,
+): ContextHotkeyEntry {
+  return { context, action, hotkey, disabled };
 }
 
 describe("buildHintGroups", () => {
-  it("groups enabled bindings in hotkeySections order", () => {
+  it("groups bound rows by context group in GROUP_ORDER", () => {
     const groups = buildHintGroups([
-      entry("Think", "t"),
-      entry("View Graveyard", "g"),
+      row("handMonster", "Normal Summon", "n"),
+      row("global", "View Graveyard", "v g"),
+      row("mainPile", "Draw", "d"),
     ]);
-    expect(groups.map((group) => group.title)).toEqual([
-      "Deck Actions",
-      "Emotes/Chat Box",
+    expect(groups.map((group) => group.context)).toEqual([
+      "global",
+      "mainPile",
+      "handMonster",
     ]);
-    expect(groups[0].rows).toEqual([
-      { label: "View Graveyard", hotkey: "g", actions: ["View Graveyard"] },
+    expect(groups[0].title).toBe("Anywhere");
+    expect(groups[2].rows).toEqual([
+      { label: "Normal Summon", hotkey: "n", actions: ["Normal Summon"] },
     ]);
   });
 
-  it("excludes disabled and unbound entries", () => {
-    const groups = buildHintGroups([
-      entry("Think", "t", true),
-      entry("Thumbs Up", ""),
-    ]);
-    expect(groups).toEqual([]);
+  it("excludes disabled and unbound rows", () => {
+    expect(
+      buildHintGroups([
+        row("handMonster", "Normal Summon", "n", true),
+        row("handMonster", "Set (To S/T)", ""),
+      ]),
+    ).toEqual([]);
   });
 
-  it("renders one row for a compound label sharing a binding", () => {
+  it("renders an action bound in several groups once per group", () => {
     const groups = buildHintGroups([
-      entry("To Hand", "h"),
-      entry("To Extra Deck", "h"),
+      row("handMonster", "Declare", "d"),
+      row("graveCard", "Declare", "d"),
     ]);
-    expect(groups).toHaveLength(1);
-    expect(groups[0].rows).toEqual([
-      {
-        label: "To Hand/To Extra Deck",
-        hotkey: "h",
-        actions: ["To Hand", "To Extra Deck"],
-      },
-    ]);
-  });
-
-  it("includes the Extension section", () => {
-    const groups = buildHintGroups([entry("Show Hotkey Hints", "f1")]);
-    expect(groups).toEqual([
-      {
-        title: "Extension",
-        rows: [
-          {
-            label: "Show Hotkey Hints",
-            hotkey: "f1",
-            actions: ["Show Hotkey Hints"],
-          },
-        ],
-      },
-    ]);
+    expect(groups).toHaveLength(2);
+    expect(groups[0].rows[0].label).toBe("Declare");
+    expect(groups[1].rows[0].label).toBe("Declare");
   });
 });

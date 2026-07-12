@@ -37,8 +37,6 @@ const touchModeChoices = [
 ];
 
 export const Options = () => {
-  const containerRef = useRef<HTMLDivElement | null>(null);
-  const [isSmall, setIsSmall] = useState(false);
   const [currentSection, setCurrentSection] = useState("General");
   const [isSavedVisible, setIsSavedVisible] = useState(false);
   const [options, setOptions] = useState<OptionsTypes>({
@@ -61,27 +59,6 @@ export const Options = () => {
   useEffect(() => {
     saveOptionsToStorage(options);
   }, [options]);
-
-  useEffect(() => {
-    function handleResize() {
-      if (containerRef.current) {
-        const width = containerRef.current.offsetWidth;
-        if (width < 260) {
-          setIsSmall(true);
-        } else {
-          setIsSmall(false);
-        }
-      }
-    }
-
-    window.addEventListener("resize", handleResize);
-
-    handleResize();
-
-    return () => {
-      window.removeEventListener("resize", handleResize);
-    };
-  }, []);
 
   const settingsSavedMessageTimer = useRef<NodeJS.Timeout | null>(null);
 
@@ -237,15 +214,14 @@ export const Options = () => {
   return (
     <div className="container mx-auto flex items-stretch h-auto p-4">
       <GithubCorner />
-      <div className="flex flex-col bg-gray-300 rounded-lg shadow-lg mb-8">
-        <div
-          ref={containerRef}
-          className="flex items-center mb-4 bg-gray-700 justify-center p-2"
-        >
+      {/* fixed width so the sidebar never resizes between sections and
+          always fits the full header */}
+      <div className="flex flex-col w-72 shrink-0 bg-gray-300 rounded-lg shadow-lg mb-8 self-start">
+        <div className="flex items-center mb-4 bg-gray-700 justify-center p-2">
           <img src={logo} alt="DBR Logo" className="w-12 h-12" />
           <h2 className="text-xl font-bold text-white">
-            {isSmall ? "DB" : "DuelingBook"}
-            <span className="text-gray-400">{isSmall ? "R" : "Reloaded"}</span>
+            DuelingBook
+            <span className="text-gray-400">Reloaded</span>
           </h2>
         </div>
         <p className="text-xl font-semibold text-center">SETTINGS</p>

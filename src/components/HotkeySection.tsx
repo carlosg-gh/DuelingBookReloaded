@@ -1,120 +1,145 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   loadHotkeysConfig,
   saveHotkeysConfig,
   parseSequence,
+  ContextHotkeyEntry,
 } from "../utilities/configUtility";
-import { findSequenceConflict } from "../utilities/hotkeyValidation";
-import { splitActions } from "../utilities/actionsManipulations";
-import { defaultDisabledActions } from "../data/hotkeySections";
+import {
+  findConflicts,
+  hardConflicts,
+  SequenceConflict,
+} from "../utilities/hotkeyValidation";
+import {
+  catalogIndex,
+  getCatalogEntry,
+  GROUP_LABELS,
+  ContextGroup,
+} from "../data/actionCatalog";
+import { HotkeySectionData } from "../data/hotkeySections";
 import { HotkeyRecorder } from "./HotkeyRecorder";
 import { displaySequence } from "../utilities/keyNormalization";
 
 interface HotkeySectionProps {
-  title: string;
-  actions: string[];
-  note: string | null;
-  selectedHotkeys: { [key: string]: string };
-  setSelectedHotkeys: React.Dispatch<
-    React.SetStateAction<{ [key: string]: string }>
-  >;
-  resetCounter: number;
+  section: HotkeySectionData;
+  /** The full config, owned by CustomizeHotkeys and shared by all sections. */
+  entries: ContextHotkeyEntry[];
+  onEntriesChanged: (entries: ContextHotkeyEntry[]) => void;
   toggleSavedMessage: () => void;
 }
 
+interface RowMessage {
+  kind: "error" | "warning";
+  text: string;
+}
+
+// action name | recorder | disable toggle — shared template so every row
+// in every section lines up.
+const ROW_GRID = "grid grid-cols-[14rem_22rem_auto] items-center gap-4";
+
+function isLocked(action: string): boolean {
+  return getCatalogEntry(action)?.locked === true;
+}
+
+function describeHardConflict(
+  context: ContextGroup,
+  conflict: SequenceConflict,
+): string {
+  const other = `${conflict.action} (${displaySequence(conflict.hotkey)})`;
+  if (conflict.context === "global" && context !== "global") {
+    return `Error! ${other} works anywhere, so this group can't reuse its key. Rebind one of them first!`;
+  }
+  if (context === "global" && conflict.context !== "global") {
+    return `Error! ${other} uses that key in ${GROUP_LABELS[conflict.context]} — an anywhere-key can't reuse it. Rebind one of them first!`;
+  }
+  return `Error! That binding overlaps with ${other} — one sequence is a prefix of the other. Rebind one of them first!`;
+}
+
+function describeWarnings(
+  action: string,
+  warnings: SequenceConflict[],
+): string {
+  const parts = warnings.map((warning) => {
+    const winner =
+      catalogIndex(action) < catalogIndex(warning.action)
+        ? action
+        : warning.action;
+    return `${warning.action} shares this key; when a menu offers both, ${winner} acts`;
+  });
+  return `Saved — ${parts.join("; ")}.`;
+}
+
 export const HotkeySection: React.FC<HotkeySectionProps> = ({
-  title,
-  actions,
-  note,
-  selectedHotkeys,
-  setSelectedHotkeys,
-  resetCounter,
+  section,
+  entries,
+  onEntriesChanged,
   toggleSavedMessage,
 }) => {
-  const [isHotkeyInvalid, setIsHotkeyInvalid] = useState(false);
-  const [conflictState, setConflictState] = useState<ConflictState>({
-    action: "",
-    hotkey: "",
-  });
-  const [disabledActions, setDisabledActions] = useState<string[]>([]);
-
-  type ConflictState = {
-    action: string;
-    hotkey: string;
-  };
+  const { context } = section;
+  // Messages from edits in this section. A save from ANOTHER section
+  // invalidates them (they describe an outdated config); our own save
+  // must not wipe the warning it just produced, hence the skip flag.
+  const [rowMessages, setRowMessages] = useState<{
+    [action: string]: RowMessage | undefined;
+  }>({});
+  const skipNextClear = useRef(false);
 
   useEffect(() => {
-    async function initializeSelectedHotkeys() {
-      try {
-        const currentHotkeys = await loadHotkeysConfig();
-
-        const initialSelectedHotkeys: { [key: string]: string } = {};
-        actions.forEach((action) => {
-          const hotkey = findHotkeyByAction(action, currentHotkeys);
-          initialSelectedHotkeys[action] = hotkey;
-        });
-
-        // merge: every section shares this state, and they all load
-        // concurrently — replacing would blank out the other sections
-        setSelectedHotkeys((prev) => ({ ...prev, ...initialSelectedHotkeys }));
-
-        const newDisabledActions = currentHotkeys
-          .filter((hotkeyItem) => hotkeyItem.disabled)
-          .map((hotkeyItem) => hotkeyItem.action as string);
-
-        setDisabledActions(newDisabledActions);
-      } catch (error) {
-        console.error("Error loading hotkeys:", error);
-      }
+    if (skipNextClear.current) {
+      skipNextClear.current = false;
+      return;
     }
+    setRowMessages({});
+  }, [entries]);
 
-    initializeSelectedHotkeys();
-  }, [actions, resetCounter]);
+  const setRowMessage = (action: string, message: RowMessage | undefined) => {
+    setRowMessages((prev) => ({ ...prev, [action]: message }));
+  };
+
+  const entryFor = (action: string) =>
+    entries.find((row) => row.context === context && row.action === action);
 
   const toggleDisable = async (action: string) => {
     try {
-      const currentHotkeys = await loadHotkeysConfig();
-
-      const actions: string[] = splitActions(action);
-
-      // Re-enabling brings the binding back into play: reject it if the key
-      // was reassigned while this entry was disabled. Disabling is always
-      // fine.
-      const target = currentHotkeys.find((item) =>
-        actions.includes(item.action),
+      const currentRows = await loadHotkeysConfig();
+      const target = currentRows.find(
+        (row) => row.context === context && row.action === action,
       );
-      if (target?.disabled) {
-        const conflict = findSequenceConflict(
+      if (!target) return;
+
+      // Re-enabling brings the binding back into play: reject it if the
+      // key was hard-reassigned in this group while the row was disabled.
+      // Disabling is always fine.
+      let warnings: SequenceConflict[] = [];
+      if (target.disabled && target.hotkey.length > 0) {
+        const conflicts = findConflicts(
           parseSequence(target.hotkey),
-          actions,
-          currentHotkeys,
+          context,
+          action,
+          currentRows,
         );
-        if (conflict) {
-          setIsHotkeyInvalid(true);
-          setConflictState({
-            action: conflict.action,
-            hotkey: conflict.hotkey,
+        const hard = hardConflicts(conflicts);
+        if (hard.length > 0) {
+          setRowMessage(action, {
+            kind: "error",
+            text: describeHardConflict(context, hard[0]),
           });
           return;
         }
+        warnings = conflicts;
       }
 
-      for (const hotkeyItem of currentHotkeys) {
-        if (actions.includes(hotkeyItem.action)) {
-          hotkeyItem.disabled = !hotkeyItem.disabled;
-        }
-      }
-
-      await saveHotkeysConfig(currentHotkeys);
-
-      const newDisabledActions = currentHotkeys
-        .filter((hotkeyItem) => hotkeyItem.disabled)
-        .map((hotkeyItem) => hotkeyItem.action as string);
-
-      setDisabledActions(newDisabledActions);
+      target.disabled = !target.disabled;
+      await saveHotkeysConfig(currentRows);
+      skipNextClear.current = true;
+      onEntriesChanged(currentRows);
       toggleSavedMessage();
-      setIsHotkeyInvalid(false);
-      setConflictState({ action: "", hotkey: "" });
+      setRowMessage(
+        action,
+        warnings.length > 0
+          ? { kind: "warning", text: describeWarnings(action, warnings) }
+          : undefined,
+      );
     } catch (error) {
       console.error("Error loading or updating hotkeys:", error);
     }
@@ -122,115 +147,104 @@ export const HotkeySection: React.FC<HotkeySectionProps> = ({
 
   const handleHotkeyChange = async (action: string, hotkey: string) => {
     try {
-      const currentHotkeys = await loadHotkeysConfig();
-      const editedActions = splitActions(action);
+      const currentRows = await loadHotkeysConfig();
 
-      // Reject bindings the matcher couldn't distinguish: equal sequences or
-      // one being a prefix of the other (compound rows edit their own group).
-      const conflict = findSequenceConflict(
+      const conflicts = findConflicts(
         parseSequence(hotkey),
-        editedActions,
-        currentHotkeys,
+        context,
+        action,
+        currentRows,
       );
-      if (conflict) {
-        setIsHotkeyInvalid(true);
-        setConflictState({ action: conflict.action, hotkey: conflict.hotkey });
+      const hard = hardConflicts(conflicts);
+      if (hard.length > 0) {
+        setRowMessage(action, {
+          kind: "error",
+          text: describeHardConflict(context, hard[0]),
+        });
         return;
       }
 
-      for (const hotkeyItem of currentHotkeys) {
-        if (editedActions.includes(hotkeyItem.action)) {
-          hotkeyItem.hotkey = hotkey;
+      for (const row of currentRows) {
+        if (row.context === context && row.action === action) {
+          row.hotkey = hotkey;
         }
       }
 
-      setSelectedHotkeys((prev) => ({ ...prev, [action]: hotkey }));
-      await saveHotkeysConfig(currentHotkeys);
+      await saveHotkeysConfig(currentRows);
+      skipNextClear.current = true;
+      onEntriesChanged(currentRows);
       toggleSavedMessage();
-      setIsHotkeyInvalid(false);
-      setConflictState({ action: "", hotkey: "" });
+      setRowMessage(
+        action,
+        conflicts.length > 0
+          ? { kind: "warning", text: describeWarnings(action, conflicts) }
+          : undefined,
+      );
     } catch (error) {
       console.error("Error loading or updating hotkeys:", error);
     }
   };
 
-  type HotkeyEntry = {
-    action: string | string[];
-    hotkey: string;
-    disabled: boolean;
-  };
-
-  function checkIfDisabled(action: string) {
-    const actionParts = splitActions(action);
-    return actionParts.some((part) => disabledActions.includes(part));
-  }
-
-  function findHotkeyByAction(
-    action: string,
-    hotkeysConfig: HotkeyEntry[],
-  ): string {
-    for (const hotkeyItem of hotkeysConfig) {
-      const actions = hotkeyItem.action;
-      if (actions === action) {
-        return hotkeyItem.hotkey;
-      } else if (action.includes("/")) {
-        const actionParts = splitActions(action);
-        if (typeof actions === "string" && actionParts.includes(actions)) {
-          return hotkeyItem.hotkey;
-        } else if (
-          Array.isArray(actions) &&
-          actionParts.some((part) => actions.includes(part))
-        ) {
-          return hotkeyItem.hotkey;
-        }
-      }
-    }
-    return "";
-  }
+  let lastSubhead: string | undefined;
 
   return (
-    <div className="container justify-center">
+    <div className="container">
       <h1 className="text-2xl text-center font-bold bg-gray-200 rounded-lg mb-4">
-        {title}
+        {section.title}
       </h1>
       <div className="flex flex-col gap-2">
-        {isHotkeyInvalid && conflictState && (
-          <h1 className="text-base font-bold text-red-500">
-            Error! That binding overlaps with {conflictState.action} (
-            {displaySequence(conflictState.hotkey)})! Rebind one of them first!
-          </h1>
-        )}
-        {note && <h1 className="opacity-80">({note})</h1>}
-        {actions.map((action, index) => {
-          const isActionDisabled = checkIfDisabled(action);
-          const containerClassName = `flex gap-4 items-center ${isActionDisabled ? "opacity-50" : ""}`;
+        {section.note && <h1 className="opacity-80">({section.note})</h1>}
+        {section.rows.map(({ action, subhead }) => {
+          const entry = entryFor(action);
+          const isActionDisabled = entry?.disabled === true;
+          const locked = isLocked(action);
+          const message = rowMessages[action];
+          const showSubhead = subhead !== undefined && subhead !== lastSubhead;
+          lastSubhead = subhead;
 
           return (
-            <>
-              <div key={index} className={containerClassName}>
-                <h2 className="inline">{action}</h2>
+            <div key={`${context}:${action}`}>
+              {showSubhead && (
+                <h2 className="text-lg font-semibold mt-2">{subhead}</h2>
+              )}
+              <div
+                className={`${ROW_GRID} ${isActionDisabled ? "opacity-50" : ""}`}
+              >
+                <h2 className="truncate" title={action}>
+                  {action}
+                </h2>
                 <HotkeyRecorder
-                  value={selectedHotkeys[action] || ""}
-                  disabled={
-                    isActionDisabled || defaultDisabledActions.includes(action)
-                  }
+                  value={entry?.hotkey ?? ""}
+                  disabled={isActionDisabled || locked}
                   onChange={(sequence) => handleHotkeyChange(action, sequence)}
                 />
-                {!defaultDisabledActions.includes(action) && (
+                {!locked ? (
                   <div className="flex items-center">
-                    <label className="mx-2" htmlFor={`${action} checkbox`}>
+                    <label
+                      className="mx-2"
+                      htmlFor={`${context} ${action} checkbox`}
+                    >
                       Disable
                     </label>
                     <input
                       type="checkbox"
-                      id={`${action} checkbox`}
+                      id={`${context} ${action} checkbox`}
                       onChange={() => toggleDisable(action)}
-                      checked={checkIfDisabled(action)}
+                      checked={isActionDisabled}
                     />
                   </div>
+                ) : (
+                  <span />
                 )}
               </div>
-            </>
+              {message && (
+                <p
+                  className={`text-sm font-bold ${message.kind === "error" ? "text-red-500" : "text-amber-600"}`}
+                >
+                  {message.text}
+                </p>
+              )}
+            </div>
           );
         })}
       </div>

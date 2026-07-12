@@ -57,6 +57,18 @@ describe("SequenceMatcher", () => {
     });
   });
 
+  it("fires shared-sequence actions in entry order (fire priority)", () => {
+    const matcher = new SequenceMatcher([
+      entry("To Extra Deck", "h"),
+      entry("To Hand", "h"),
+    ]);
+    // Entry order, not alphabetical or registration-by-name order.
+    expect(matcher.step("h")).toEqual({
+      type: "fire",
+      actions: ["To Extra Deck", "To Hand"],
+    });
+  });
+
   it("excludes disabled entries", () => {
     const matcher = new SequenceMatcher([
       entry("View Graveyard", "g", true),

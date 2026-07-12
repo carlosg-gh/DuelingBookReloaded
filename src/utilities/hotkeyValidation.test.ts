@@ -1,91 +1,140 @@
-import { findSequenceConflict } from "./hotkeyValidation";
-import { HotkeyEntry } from "./configUtility";
+import { findConflicts, hardConflicts } from "./hotkeyValidation";
+import { ContextHotkeyEntry } from "./hotkeySequence";
+import { ContextGroup } from "../data/actionCatalog";
 
-const entries: HotkeyEntry[] = [
-  { action: "View Graveyard", hotkey: "g", disabled: false },
-  { action: "View Extra Deck", hotkey: "v e", disabled: false },
-  { action: "To Hand", hotkey: "h", disabled: false },
-  { action: "To Extra Deck", hotkey: "h", disabled: false },
+function row(
+  context: ContextGroup,
+  action: string,
+  hotkey: string,
+  disabled = false,
+): ContextHotkeyEntry {
+  return { context, action, hotkey, disabled };
+}
+
+const rows: ContextHotkeyEntry[] = [
+  row("global", "View Graveyard", "v g"),
+  row("global", "Show Hotkey Hints", "f1"),
+  row("handMonster", "Normal Summon", "n"),
+  row("handMonster", "To Graveyard", "t g"),
+  row("fieldMonsterFaceDown", "Flip Summon", "n"),
+  row("fieldMonsterFaceDown", "Target", "t"),
+  row("graveCard", "Banish", "", false),
+  row("graveCard", "To Hand", "h", true),
 ];
 
-describe("findSequenceConflict", () => {
+describe("findConflicts", () => {
   it("accepts a free key", () => {
-    expect(findSequenceConflict(["t"], ["Think"], entries)).toBeNull();
-  });
-
-  it("rejects an exact duplicate", () => {
-    expect(findSequenceConflict(["g"], ["Think"], entries)).toEqual({
-      action: "View Graveyard",
-      hotkey: "g",
-    });
-  });
-
-  it("rejects a candidate that is a prefix of an existing sequence", () => {
-    expect(findSequenceConflict(["v"], ["Think"], entries)).toEqual({
-      action: "View Extra Deck",
-      hotkey: "v e",
-    });
-  });
-
-  it("rejects a candidate that an existing binding is a prefix of", () => {
-    expect(findSequenceConflict(["g", "e"], ["Think"], entries)).toEqual({
-      action: "View Graveyard",
-      hotkey: "g",
-    });
-  });
-
-  it("accepts sequences that merely share a prefix", () => {
-    expect(findSequenceConflict(["v", "g"], ["Think"], entries)).toBeNull();
-  });
-
-  it("exempts the actions being edited (compound group re-save)", () => {
-    expect(
-      findSequenceConflict(["h"], ["To Hand", "To Extra Deck"], entries),
-    ).toBeNull();
+    expect(findConflicts(["k"], "handMonster", "Set", rows)).toEqual([]);
   });
 
   it("ignores an empty candidate", () => {
-    expect(findSequenceConflict([], ["Think"], entries)).toBeNull();
+    expect(findConflicts([], "handMonster", "Set", rows)).toEqual([]);
+  });
+
+  it("warns (not blocks) on an equal key within the same group", () => {
+    const conflicts = findConflicts(["n"], "handMonster", "Set", rows);
+    expect(conflicts).toEqual([
+      {
+        context: "handMonster",
+        action: "Normal Summon",
+        hotkey: "n",
+        reason: "equal",
+        severity: "warning",
+      },
+    ]);
+    expect(hardConflicts(conflicts)).toEqual([]);
+  });
+
+  it("hard-blocks prefix relations within the same group, both directions", () => {
+    expect(findConflicts(["t"], "handMonster", "Set", rows)).toEqual([
+      {
+        context: "handMonster",
+        action: "To Graveyard",
+        hotkey: "t g",
+        reason: "prefix",
+        severity: "hard",
+      },
+    ]);
+    expect(findConflicts(["t", "g", "x"], "handMonster", "Set", rows)).toEqual([
+      {
+        context: "handMonster",
+        action: "To Graveyard",
+        hotkey: "t g",
+        reason: "prefix",
+        severity: "hard",
+      },
+    ]);
+  });
+
+  it("allows the same key in a different group without any conflict", () => {
+    expect(findConflicts(["n"], "graveCard", "SS ATK", rows)).toEqual([]);
+  });
+
+  it("allows cross-group prefix relations", () => {
+    expect(findConflicts(["t", "h"], "graveCard", "To Hand", rows)).toEqual([]);
+  });
+
+  it("hard-blocks a group key equal to or prefixed by a global key", () => {
+    expect(findConflicts(["f1"], "handMonster", "Set", rows)).toEqual([
+      {
+        context: "global",
+        action: "Show Hotkey Hints",
+        hotkey: "f1",
+        reason: "equal",
+        severity: "hard",
+      },
+    ]);
+    expect(findConflicts(["v"], "handMonster", "Set", rows)).toEqual([
+      {
+        context: "global",
+        action: "View Graveyard",
+        hotkey: "v g",
+        reason: "prefix",
+        severity: "hard",
+      },
+    ]);
+  });
+
+  it("hard-blocks a global candidate against every group", () => {
+    const conflicts = findConflicts(["n"], "global", "Think", rows);
+    expect(conflicts.map((conflict) => conflict.context).sort()).toEqual([
+      "fieldMonsterFaceDown",
+      "handMonster",
+    ]);
+    expect(hardConflicts(conflicts)).toHaveLength(2);
+  });
+
+  it("exempts the edited row itself", () => {
+    expect(findConflicts(["n"], "handMonster", "Normal Summon", rows)).toEqual(
+      [],
+    );
+  });
+
+  it("ignores disabled and unbound rows", () => {
+    expect(findConflicts(["h"], "graveCard", "SS ATK", rows)).toEqual([]);
+    expect(
+      findConflicts(["x"], "graveCard", "SS ATK", [
+        row("graveCard", "Banish", "", false),
+      ]),
+    ).toEqual([]);
   });
 
   it("does not conflict a shifted key with its plain form", () => {
-    expect(findSequenceConflict(["shift+g"], ["Think"], entries)).toBeNull();
+    expect(findConflicts(["shift+n"], "handMonster", "Set", rows)).toEqual([]);
   });
 
-  it("conflicts a sequence with its shift-step prefix binding", () => {
-    expect(findSequenceConflict(["g", "shift+b"], ["Think"], entries)).toEqual({
-      action: "View Graveyard",
-      hotkey: "g",
-    });
-  });
-
-  it("ignores disabled entries entirely", () => {
-    const withDisabled: HotkeyEntry[] = [
-      { action: "View Graveyard", hotkey: "g", disabled: true },
-      { action: "View Extra Deck", hotkey: "v e", disabled: true },
-    ];
-    expect(findSequenceConflict(["g"], ["Think"], withDisabled)).toBeNull();
-    expect(findSequenceConflict(["v"], ["Think"], withDisabled)).toBeNull();
-  });
-
-  it("still conflicts with enabled entries when others are disabled", () => {
-    const mixed: HotkeyEntry[] = [
-      { action: "View Graveyard", hotkey: "g", disabled: true },
-      { action: "Think", hotkey: "t", disabled: false },
-    ];
-    expect(findSequenceConflict(["t"], ["Declare"], mixed)).toEqual({
-      action: "Think",
-      hotkey: "t",
-    });
-  });
-
-  it("conflicts equal shifted sequences", () => {
-    const withShift = [
-      ...entries,
-      { action: "Banish FD", hotkey: "s shift+b", disabled: false },
-    ];
+  it("warns on equal shifted sequences in one group", () => {
+    const withShift = [row("handMonster", "S. Summon ATK", "s shift+b")];
     expect(
-      findSequenceConflict(["s", "shift+b"], ["Think"], withShift),
-    ).toEqual({ action: "Banish FD", hotkey: "s shift+b" });
+      findConflicts(["s", "shift+b"], "handMonster", "Set", withShift),
+    ).toEqual([
+      {
+        context: "handMonster",
+        action: "S. Summon ATK",
+        hotkey: "s shift+b",
+        reason: "equal",
+        severity: "warning",
+      },
+    ]);
   });
 });
